@@ -2,6 +2,7 @@ export async function translateText(opts: {
   text: string;
   sourceLang: string;
   targetLang: string;
+  preserveLayout?: boolean;
   onDelta?: (full: string) => void;
 }): Promise<string> {
   const res = await fetch("/api/translate", {
@@ -11,6 +12,7 @@ export async function translateText(opts: {
       text: opts.text,
       sourceLang: opts.sourceLang,
       targetLang: opts.targetLang,
+      preserveLayout: opts.preserveLayout === true,
       stream: true,
     }),
   });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { MAX_TRANSLATE_CHARS } from "@/lib/limits";
 
-const MAX_CHARS = 8000;
+const MAX_CHARS = MAX_TRANSLATE_CHARS;
 const WINDOW_MS = 60_000;
 const MAX_HITS = 40;
 const hits = new Map<string, { n: number; t: number }>();
@@ -45,6 +46,7 @@ export async function POST(req: NextRequest) {
     sourceLang?: string;
     targetLang?: string;
     stream?: boolean;
+    preserveLayout?: boolean;
   };
 
   const text = String(body.text ?? "").trim();
@@ -59,11 +61,39 @@ export async function POST(req: NextRequest) {
   }
 
   const sourceLang = body.sourceLang || "auto";
-  const targetLang = body.targetLang || "Chinese";
+  const targetLang = body.targetLang || "English";
   const stream = body.stream !== false;
+  const preserveLayout = Boolean(body.preserveLayout);
   const baseUrl =
     process.env.DASHSCOPE_BASE_URL ||
     "https://dashscope.aliyuncs.com/compatible-mode/v1";
+
+  const payload = preserveLayout
+    ? {
+        model: process.env.DASHSCOPE_LAYOUT_MODEL || "qwen-plus",
+        stream,
+        messages: [
+          {
+            role: "system",
+            content:
+              `Translate the document page into ${targetLang}. ` +
+              "Keep the exact line breaks: one source line must stay one output line. " +
+              "Never split a table-of-contents line. If a line has a heading, leader dots (....), and a page number, keep all of that on the SAME line. " +
+              "Do not add, remove, or reorder lines. Translate natural language only; keep dots, numbers, and punctuation. " +
+              "Output the translation only.",
+          },
+          { role: "user", content: text },
+        ],
+      }
+    : {
+        model: "qwen-mt-flash",
+        stream,
+        messages: [{ role: "user", content: text }],
+        translation_options: {
+          source_lang: sourceLang,
+          target_lang: targetLang,
+        },
+      };
 
   const upstream = await fetch(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
     method: "POST",
@@ -71,15 +101,7 @@ export async function POST(req: NextRequest) {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      model: "qwen-mt-flash",
-      messages: [{ role: "user", content: text }],
-      stream,
-      translation_options: {
-        source_lang: sourceLang,
-        target_lang: targetLang,
-      },
-    }),
+    body: JSON.stringify(payload),
   });
 
   if (!upstream.ok) {

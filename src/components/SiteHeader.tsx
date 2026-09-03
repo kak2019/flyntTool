@@ -2,13 +2,11 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { getTool, tools } from "@/lib/tools";
+import { tools } from "@/lib/tools";
 
 export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
-  const current = tools.find((t) => pathname.startsWith(t.href));
-  const tool = current ?? (pathname.startsWith("/tools/") ? getTool(pathname.split("/")[2] ?? "") : undefined);
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -17,23 +15,33 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="border-b border-zinc-200 bg-white">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <Link href="/" className="shrink-0 font-semibold tracking-tight text-zinc-900">
-            Flynt Tools
-          </Link>
-          {tool ? (
-            <>
-              <span className="text-zinc-300">/</span>
-              <span className="truncate text-sm text-zinc-500">{tool.name}</span>
-            </>
-          ) : null}
-        </div>
+    <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/90 backdrop-blur">
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4">
+        <Link href="/" className="shrink-0 font-semibold tracking-tight text-zinc-900">
+          Flynt Tools
+        </Link>
+        <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto text-sm">
+          {tools.map((tool) => {
+            const active = pathname.startsWith(tool.href);
+            return (
+              <Link
+                key={tool.id}
+                href={tool.href}
+                className={`shrink-0 rounded-lg px-2.5 py-1 ${
+                  active
+                    ? "bg-teal-50 font-medium text-teal-800"
+                    : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800"
+                }`}
+              >
+                {tool.name}
+              </Link>
+            );
+          })}
+        </nav>
         <button
           type="button"
           onClick={logout}
-          className="text-sm text-zinc-500 hover:text-zinc-800"
+          className="shrink-0 text-sm text-zinc-500 hover:text-zinc-800"
         >
           退出
         </button>

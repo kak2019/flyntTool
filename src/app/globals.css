@@ -23,3 +23,53 @@ input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
   opacity: 1;
 }
+
+.doc-html :where(p, ul, ol, table, pre, blockquote) {
+  margin: 0.55em 0;
+}
+
+.doc-html :where(h1, h2, h3, h4) {
+  font-weight: 600;
+  color: #18181b;
+  margin: 0.9em 0 0.4em;
+}
+
+.doc-html h1 {
+  font-size: 1.2rem;
+}
+
+.doc-html h2 {
+  font-size: 1.05rem;
+}
+
+.doc-html h3,
+.doc-html h4 {
+  font-size: 1rem;
+}
+
+.doc-html ul,
+.doc-html ol {
+  padding-left: 1.25rem;
+}
+
+.doc-html li {
+  margin: 0.15em 0;
+}
+
+.doc-html table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.doc-html th,
+.doc-html td {
+  border: 1px solid #e4e4e7;
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+}
+
+.doc-html th {
+  background: #f4f4f5;
+}
+

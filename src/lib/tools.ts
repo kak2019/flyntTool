@@ -18,14 +18,14 @@ export const tools: Tool[] = [
     id: "translate",
     name: "快速翻译",
     kicker: "文本",
-    description: "Qwen MT Flash，自动检测语言，默认译成中文。",
+    description: "Qwen MT Flash，自动检测语言，默认译成英语。",
     href: "/tools/translate",
   },
   {
     id: "pdf",
     name: "PDF 对照翻译",
     kicker: "文档",
-    description: "左边看原文 PDF，右边按页翻译。扫描件暂不支持。",
+    description: "左边看原文 PDF，右边按页翻译。尽量保留换行；扫描件和手写会自动 OCR。",
     href: "/tools/pdf",
   },
 ];

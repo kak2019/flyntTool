@@ -1,0 +1,1 @@
+export const MAX_TRANSLATE_CHARS = 8000;

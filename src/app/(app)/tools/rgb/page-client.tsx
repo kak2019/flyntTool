@@ -2,12 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { clampByte, parseColor, rgbToHex } from "@/lib/color";
+import { btnClass, fieldClass } from "@/lib/styles";
 
 export default function RgbPage() {
   const [r, setR] = useState(15);
   const [g, setG] = useState(118);
   const [b, setB] = useState(110);
-  const [hexInput, setHexInput] = useState("#0f766e");
+  const [hexInput, setHexInput] = useState("#0F766E");
   const [paste, setPaste] = useState("");
   const [copied, setCopied] = useState("");
 
@@ -47,31 +48,59 @@ export default function RgbPage() {
     setTimeout(() => setCopied(""), 1200);
   }
 
+  async function pasteClipboard() {
+    try {
+      const text = await navigator.clipboard.readText();
+      onPaste(text.trim());
+    } catch {
+      setCopied("");
+    }
+  }
+
   const rgbCss = useMemo(() => `rgb(${r}, ${g}, ${b})`, [r, g, b]);
 
   return (
     <div className="max-w-3xl">
       <h1 className="text-2xl font-semibold tracking-tight">RGB / Hex</h1>
       <p className="mt-1 text-sm text-zinc-500">
-        两边改都会同步。支持 <code>#0f766e</code>、<code>rgb(15, 118, 110)</code>、
-        <code>15, 118, 110</code>。
+        粘贴、滑杆、取色器都会同步。支持 <code>#0F766E</code>、
+        <code>rgb(15, 118, 110)</code>、<code>15, 118, 110</code>。
       </p>
 
       <div className="mt-6 grid gap-6 md:grid-cols-[220px_1fr]">
-        <div
-          className="h-52 rounded-2xl border border-zinc-200 shadow-inner"
-          style={{ background: hex }}
-        />
+        <div className="space-y-3">
+          <div
+            className="h-52 rounded-2xl border border-zinc-200 shadow-inner"
+            style={{ background: hex }}
+          />
+          <label className="flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm">
+            取色器
+            <input
+              type="color"
+              value={hex.toLowerCase()}
+              onChange={(e) => {
+                const parsed = parseColor(e.target.value);
+                if (parsed) applyRgb(parsed.r, parsed.g, parsed.b);
+              }}
+              className="h-8 w-16 cursor-pointer rounded border-0 bg-transparent"
+            />
+          </label>
+        </div>
 
         <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
           <label className="block text-sm font-medium">
             随便粘贴
-            <input
-              value={paste}
-              onChange={(e) => onPaste(e.target.value)}
-              placeholder="#0f766e 或 15, 118, 110"
-              className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2 font-mono text-sm outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
-            />
+            <div className="mt-1.5 flex gap-2">
+              <input
+                value={paste}
+                onChange={(e) => onPaste(e.target.value)}
+                placeholder="#0F766E 或 15, 118, 110"
+                className={fieldClass}
+              />
+              <button type="button" onClick={() => void pasteClipboard()} className={btnClass}>
+                剪贴板
+              </button>
+            </div>
           </label>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -81,13 +110,9 @@ export default function RgbPage() {
                 <input
                   value={hexInput}
                   onChange={(e) => onHexChange(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-200 px-3 py-2 font-mono text-sm outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
+                  className={`${fieldClass} font-mono`}
                 />
-                <button
-                  type="button"
-                  onClick={() => copy("hex", hex)}
-                  className="shrink-0 rounded-xl border border-zinc-200 px-3 text-sm hover:bg-zinc-50"
-                >
+                <button type="button" onClick={() => void copy("hex", hex)} className={btnClass}>
                   复制
                 </button>
               </div>
@@ -98,13 +123,9 @@ export default function RgbPage() {
                 <input
                   readOnly
                   value={rgbCss}
-                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 font-mono text-sm"
+                  className={`${fieldClass} bg-zinc-50 font-mono`}
                 />
-                <button
-                  type="button"
-                  onClick={() => copy("rgb", rgbCss)}
-                  className="shrink-0 rounded-xl border border-zinc-200 px-3 text-sm hover:bg-zinc-50"
-                >
+                <button type="button" onClick={() => void copy("rgb", rgbCss)} className={btnClass}>
                   复制
                 </button>
               </div>

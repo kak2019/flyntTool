@@ -6,7 +6,8 @@ export function clampByte(value: number): number {
 export function rgbToHex(r: number, g: number, b: number): string {
   return `#${[r, g, b]
     .map((n) => clampByte(n).toString(16).padStart(2, "0"))
-    .join("")}`;
+    .join("")
+    .toUpperCase()}`;
 }
 
 export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {

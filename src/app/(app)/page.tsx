@@ -6,9 +6,7 @@ export default function HomePage() {
     <div>
       <p className="text-sm font-medium text-teal-700">tool.flynt.top</p>
       <h1 className="mt-1 text-3xl font-semibold tracking-tight">个人工具箱</h1>
-      <p className="mt-2 max-w-xl text-zinc-500">
-        给自己用的小工具。要加新的：新建页面，再在清单里登记一行。
-      </p>
+      <p className="mt-2 max-w-xl text-zinc-500">给自己用的小工具，顶部可以直接切换。</p>
 
       <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {tools.map((tool) => (
@@ -21,9 +19,7 @@ export default function HomePage() {
                 {tool.kicker}
               </p>
               <h2 className="mt-2 text-lg font-semibold">{tool.name}</h2>
-              <p className="mt-2 text-sm leading-6 text-zinc-500">
-                {tool.description}
-              </p>
+              <p className="mt-2 text-sm leading-6 text-zinc-500">{tool.description}</p>
             </Link>
           </li>
         ))}
