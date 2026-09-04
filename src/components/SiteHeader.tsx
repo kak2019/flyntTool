@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { tools } from "@/lib/tools";
+import { toolCategories, toolsIn } from "@/lib/tools";
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -21,22 +21,27 @@ export function SiteHeader() {
           Flynt Tools
         </Link>
         <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto text-sm">
-          {tools.map((tool) => {
-            const active = pathname.startsWith(tool.href);
-            return (
-              <Link
-                key={tool.id}
-                href={tool.href}
-                className={`shrink-0 rounded-lg px-2.5 py-1 ${
-                  active
-                    ? "bg-teal-50 font-medium text-teal-800"
-                    : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800"
-                }`}
-              >
-                {tool.name}
-              </Link>
-            );
-          })}
+          {toolCategories.map((category, index) => (
+            <span key={category.id} className="flex shrink-0 items-center gap-1">
+              {index > 0 ? <span className="mx-1 h-4 w-px shrink-0 bg-zinc-200" /> : null}
+              {toolsIn(category.id).map((tool) => {
+                const active = pathname.startsWith(tool.href);
+                return (
+                  <Link
+                    key={tool.id}
+                    href={tool.href}
+                    className={`shrink-0 rounded-lg px-2.5 py-1 ${
+                      active
+                        ? "bg-teal-50 font-medium text-teal-800"
+                        : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800"
+                    }`}
+                  >
+                    {tool.name}
+                  </Link>
+                );
+              })}
+            </span>
+          ))}
         </nav>
         <button
           type="button"

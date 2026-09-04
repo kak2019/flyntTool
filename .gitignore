@@ -8,3 +8,5 @@ build
 .env*.local
 public/pdf.worker.min.mjs
 *.tsbuildinfo
+/data/*.json
+/data/*.tmp

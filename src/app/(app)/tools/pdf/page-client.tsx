@@ -286,9 +286,9 @@ export default function PdfPage() {
       </div>
 
       {!pageCount ? (
-        <div
-          className={`mt-6 rounded-2xl border border-dashed bg-white px-6 py-16 text-center ${
-            dragging ? "border-teal-600 bg-teal-50 text-teal-800" : "border-zinc-300 text-zinc-500"
+        <label
+          className={`mt-6 block cursor-pointer rounded-2xl border border-dashed px-6 py-16 text-center ${
+            dragging ? "border-teal-600 bg-teal-50 text-teal-800" : "border-zinc-300 bg-white text-zinc-500"
           }`}
           onDragOver={(e) => {
             e.preventDefault();
@@ -301,8 +301,17 @@ export default function PdfPage() {
             void onFile(e.dataTransfer.files?.[0]);
           }}
         >
-          把 PDF 拖到这里，或点右上角选择文件
-        </div>
+          把 PDF 拖到这里，或点击选择文件
+          <input
+            type="file"
+            accept="application/pdf"
+            className="hidden"
+            onChange={(e) => {
+              void onFile(e.target.files?.[0]);
+              e.target.value = "";
+            }}
+          />
+        </label>
       ) : (
         <>
           <div className="mt-4 flex flex-wrap items-center gap-2">
