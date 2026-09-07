@@ -89,6 +89,14 @@ export const tools: Tool[] = [
     href: "/tools/pdf",
   },
   {
+    id: "patent-fig",
+    name: "专利附图嵌入",
+    kicker: "文档",
+    category: "info",
+    description: "把附图标号和引线合成进图片并改成嵌入型，「图 1」标题不进图。",
+    href: "/tools/patent-fig",
+  },
+  {
     id: "news",
     name: "新闻聚合",
     kicker: "资讯",
@@ -103,6 +111,14 @@ export const tools: Tool[] = [
     category: "life",
     description: "攒钱、复利、目标金额；下面用嵌套格子看剩余寿命、周末和睡眠。",
     href: "/tools/fi",
+  },
+  {
+    id: "cutout",
+    name: "抠图去背景",
+    kicker: "图片",
+    category: "life",
+    description: "上传或粘贴照片，扣成透明底 PNG，可预览、下载。",
+    href: "/tools/cutout",
   },
 ];
 

@@ -20,28 +20,45 @@ export function SiteHeader() {
         <Link href="/" className="shrink-0 font-semibold tracking-tight text-zinc-900">
           Flynt Tools
         </Link>
-        <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto text-sm">
-          {toolCategories.map((category, index) => (
-            <span key={category.id} className="flex shrink-0 items-center gap-1">
-              {index > 0 ? <span className="mx-1 h-4 w-px shrink-0 bg-zinc-200" /> : null}
-              {toolsIn(category.id).map((tool) => {
-                const active = pathname.startsWith(tool.href);
-                return (
-                  <Link
-                    key={tool.id}
-                    href={tool.href}
-                    className={`shrink-0 rounded-lg px-2.5 py-1 ${
-                      active
-                        ? "bg-teal-50 font-medium text-teal-800"
-                        : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800"
-                    }`}
-                  >
-                    {tool.name}
-                  </Link>
-                );
-              })}
-            </span>
-          ))}
+        <nav className="flex min-w-0 flex-1 items-center gap-1 text-sm">
+          {toolCategories.map((category) => {
+            const items = toolsIn(category.id);
+            const active = items.some((tool) => pathname.startsWith(tool.href));
+            return (
+              <details key={category.id} name="tools-nav" className="relative">
+                <summary
+                  className={`flex cursor-pointer list-none items-center gap-1 rounded-lg px-2.5 py-1 marker:content-none [&::-webkit-details-marker]:hidden ${
+                    active
+                      ? "bg-teal-50 font-medium text-teal-800"
+                      : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800"
+                  }`}
+                >
+                  {category.name}
+                  <span className="text-[10px] leading-none text-zinc-400" aria-hidden>
+                    ▾
+                  </span>
+                </summary>
+                <div className="absolute left-0 top-full z-30 mt-1 min-w-40 rounded-xl border border-zinc-200 bg-white py-1 shadow-lg">
+                  {items.map((tool) => {
+                    const current = pathname.startsWith(tool.href);
+                    return (
+                      <Link
+                        key={tool.id}
+                        href={tool.href}
+                        className={`block px-3 py-1.5 ${
+                          current
+                            ? "bg-teal-50 font-medium text-teal-800"
+                            : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+                        }`}
+                      >
+                        {tool.name}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </details>
+            );
+          })}
         </nav>
         <button
           type="button"
