@@ -13,8 +13,7 @@ export function DailyLearn() {
         </span>
         <span className="text-zinc-300">/</span>
         <span>
-          <span className="text-zinc-400">句</span>
-          <span className="ml-2 text-zinc-700">{sentence.en}</span>
+          <span className="text-zinc-700">{sentence.en}</span>
           <span className="ml-2 text-zinc-400">— {sentence.from}</span>
           <span className="ml-2 text-zinc-400">{sentence.zh}</span>
         </span>
