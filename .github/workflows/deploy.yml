@@ -12,12 +12,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install and build
+        run: |
+          npm ci
+          npm run build
+
       - name: Pack source
         run: |
           tar \
             --exclude='.git' \
             --exclude='node_modules' \
-            --exclude='.next' \
             --exclude='.env' \
             --exclude='.env.local' \
             --exclude='.env*.local' \
@@ -34,7 +44,7 @@ jobs:
           target: /tmp/flynt-deploy
           overwrite: true
 
-      - name: Install, build and restart
+      - name: Install and restart
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -46,6 +56,5 @@ jobs:
             cd /var/www/flynt-tools
             tar -xzf /tmp/flynt-deploy/flynt-tools.tar.gz
             rm -rf /tmp/flynt-deploy
-            npm install
-            npm run build
+            npm install --omit=dev
             pm2 restart flynt-tools || pm2 start npm --name flynt-tools -- start
