@@ -81,7 +81,7 @@ export default function CutoutPage() {
       const file = item?.getAsFile();
       if (file) {
         e.preventDefault();
-        onFile(file);
+        void runCutout(file);
       }
     }
     window.addEventListener("paste", onPaste);

@@ -342,7 +342,7 @@ export async function flattenPatentFigures(file: File, onProgress: FlattenProgre
     );
     relMap.set(rid, newName);
 
-    let nextXml = pic.xml
+    const nextXml = pic.xml
       .replace(/r:embed="[^"]+"/, `r:embed="${rid}"`)
       .replace(/<wp:extent cx="\d+" cy="\d+"/, `<wp:extent cx="${Math.round(out.widthEmu)}" cy="${Math.round(out.heightEmu)}"`)
       .replace(/<a:ext cx="\d+" cy="\d+"/, `<a:ext cx="${Math.round(out.widthEmu)}" cy="${Math.round(out.heightEmu)}"`);
