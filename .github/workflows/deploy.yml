@@ -21,8 +21,8 @@ jobs:
             --exclude='.env' \
             --exclude='.env.local' \
             --exclude='.env*.local' \
-            --exclude='flynt-tools.tar.gz' \
-            -czf flynt-tools.tar.gz .
+            -czf /tmp/flynt-tools.tar.gz .
+          mv /tmp/flynt-tools.tar.gz .
 
       - name: Upload to server
         uses: appleboy/scp-action@v1
