@@ -73,12 +73,36 @@ export const tools: Tool[] = [
     href: "/tools/id",
   },
   {
+    id: "base64",
+    name: "Base64",
+    kicker: "编码",
+    category: "dev",
+    description: "文本和文件编解码，贴进去自动判断；图片能预览。",
+    href: "/tools/base64",
+  },
+  {
+    id: "hash",
+    name: "Hash",
+    kicker: "摘要",
+    category: "dev",
+    description: "MD5 / SHA-1 / SHA-256，文本和文件都算，结果可复制。",
+    href: "/tools/hash",
+  },
+  {
     id: "translate",
     name: "快速翻译",
     kicker: "文本",
     category: "info",
     description: "Qwen MT Flash，自动检测语言，默认译成英语。",
     href: "/tools/translate",
+  },
+  {
+    id: "md",
+    name: "Markdown 预览",
+    kicker: "文本",
+    category: "info",
+    description: "左边写，右边看。支持标题、列表、代码块和表格。",
+    href: "/tools/md",
   },
   {
     id: "pdf",
@@ -119,6 +143,14 @@ export const tools: Tool[] = [
     category: "life",
     description: "上传或粘贴照片，扣成透明底 PNG，可预览、下载。",
     href: "/tools/cutout",
+  },
+  {
+    id: "qr",
+    name: "二维码",
+    kicker: "图片",
+    category: "life",
+    description: "文本生成二维码，也能上传或粘贴图片识别。",
+    href: "/tools/qr",
   },
 ];
 
