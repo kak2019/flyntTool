@@ -54,6 +54,8 @@ jobs:
           script: |
             set -e
             cd /var/www/flynt-tools
+            rm -rf .next
+            rm -f src/instrumentation.ts
             tar -xzf /tmp/flynt-deploy/flynt-tools.tar.gz
             rm -rf /tmp/flynt-deploy
             npm install --omit=dev
