@@ -14,7 +14,11 @@ function fail(err: unknown, fallback: string, status = 400) {
 }
 
 async function payload(tickets: DltTicket[], force = false) {
-  startDltWatcher();
+  try {
+    startDltWatcher();
+  } catch (err) {
+    console.error("[dlt] watcher", err instanceof Error ? err.message : err);
+  }
   try {
     const draws = await fetchDltDraws(force);
     const hits = checkDraws(tickets, draws);
