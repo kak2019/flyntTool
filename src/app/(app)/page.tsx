@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DltPanel } from "@/components/DltPanel";
 import { WatchlistPanel } from "@/components/WatchlistPanel";
 import { toolCategories, toolsIn } from "@/lib/tools";
 
@@ -28,6 +29,7 @@ export default function HomePage() {
               </li>
             ))}
           </ul>
+          {category.id === "life" ? <DltPanel /> : null}
         </section>
       ))}
 

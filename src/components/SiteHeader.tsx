@@ -2,11 +2,41 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
 import { toolCategories, toolsIn } from "@/lib/tools";
 
 export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
+  const navRef = useRef<HTMLElement>(null);
+
+  function closeMenus() {
+    navRef.current?.querySelectorAll("details[open]").forEach((el) => {
+      el.removeAttribute("open");
+    });
+  }
+
+  useEffect(() => {
+    closeMenus();
+  }, [pathname]);
+
+  useEffect(() => {
+    function onPointerDown(e: PointerEvent) {
+      const opened = navRef.current?.querySelector("details[open]");
+      if (!opened) return;
+      if (opened.contains(e.target as Node)) return;
+      opened.removeAttribute("open");
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") closeMenus();
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -20,7 +50,7 @@ export function SiteHeader() {
         <Link href="/" className="shrink-0 font-semibold tracking-tight text-zinc-900">
           Flynt Tools
         </Link>
-        <nav className="flex min-w-0 flex-1 items-center gap-1 text-sm">
+        <nav ref={navRef} className="flex min-w-0 flex-1 items-center gap-1 text-sm">
           {toolCategories.map((category) => {
             const items = toolsIn(category.id);
             const active = items.some((tool) => pathname.startsWith(tool.href));
@@ -38,13 +68,19 @@ export function SiteHeader() {
                     ▾
                   </span>
                 </summary>
-                <div className="absolute left-0 top-full z-30 mt-1 min-w-40 rounded-xl border border-zinc-200 bg-white py-1 shadow-lg">
+                <div
+                  className="absolute left-0 top-full z-30 mt-1 min-w-40 rounded-xl border border-zinc-200 bg-white py-1 shadow-lg"
+                  onClick={(e) => {
+                    if (e.target === e.currentTarget) closeMenus();
+                  }}
+                >
                   {items.map((tool) => {
                     const current = pathname.startsWith(tool.href);
                     return (
                       <Link
                         key={tool.id}
                         href={tool.href}
+                        onClick={closeMenus}
                         className={`block px-3 py-1.5 ${
                           current
                             ? "bg-teal-50 font-medium text-teal-800"
