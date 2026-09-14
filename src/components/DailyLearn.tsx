@@ -23,7 +23,7 @@ export function DailyLearn() {
         </div>
         <button
           type="button"
-          onClick={() => setLearn((current) => shuffleLearn(current))}
+          onClick={() => setLearn((current) => ({ ...current, ...shuffleLearn(current) }))}
           className="shrink-0 text-sm text-teal-700 hover:text-teal-800"
         >
           换一条
