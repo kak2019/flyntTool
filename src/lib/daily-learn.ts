@@ -490,3 +490,21 @@ export function getDailyLearn(now = new Date()) {
   const sentence = DAILY_SENTENCES[hash(`en:${day}`) % DAILY_SENTENCES.length];
   return { day, poem, sentence };
 }
+
+function pickOther<T>(items: T[], current: T, key: (item: T) => string): T {
+  if (items.length < 2) return current;
+  let next = items[Math.floor(Math.random() * items.length)];
+  let guard = 0;
+  while (key(next) === key(current) && guard < 8) {
+    next = items[Math.floor(Math.random() * items.length)];
+    guard += 1;
+  }
+  return next;
+}
+
+export function shuffleLearn(current: { poem: DailyPoem; sentence: DailySentence }) {
+  return {
+    poem: pickOther(DAILY_POEMS, current.poem, (item) => item.line),
+    sentence: pickOther(DAILY_SENTENCES, current.sentence, (item) => item.en),
+  };
+}

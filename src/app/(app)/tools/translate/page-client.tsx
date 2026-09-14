@@ -1,9 +1,10 @@
 "use client";
 
-import { KeyboardEvent, useMemo, useState } from "react";
+import { KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { LANGUAGES, SOURCE_LANGUAGES } from "@/lib/languages";
 import { translateText } from "@/lib/client-translate";
 import { MAX_TRANSLATE_CHARS } from "@/lib/limits";
+import { speakText } from "@/lib/speak";
 import { btnClass, fieldClass, primaryBtnClass, selectClass } from "@/lib/styles";
 
 export default function TranslatePage() {
@@ -14,13 +15,29 @@ export default function TranslatePage() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const stopSpeak = useRef<(() => void) | null>(null);
 
   const count = useMemo(() => input.trim().length, [input]);
   const overLimit = count > MAX_TRANSLATE_CHARS;
   const canTranslate = count > 0 && !pending && !overLimit;
 
+  function haltSpeak() {
+    stopSpeak.current?.();
+    stopSpeak.current = null;
+    setSpeaking(false);
+  }
+
+  useEffect(() => {
+    return () => {
+      stopSpeak.current?.();
+      stopSpeak.current = null;
+    };
+  }, []);
+
   async function run() {
     if (!canTranslate) return;
+    haltSpeak();
     setPending(true);
     setError("");
     setOutput("");
@@ -40,6 +57,7 @@ export default function TranslatePage() {
   }
 
   function swap() {
+    haltSpeak();
     const nextSource = targetLang;
     const nextTarget =
       sourceLang === "auto"
@@ -68,11 +86,32 @@ export default function TranslatePage() {
     setTimeout(() => setCopied(false), 1200);
   }
 
+  function toggleSpeak() {
+    if (speaking) {
+      haltSpeak();
+      return;
+    }
+    const text = output.trim();
+    if (!text) return;
+    setError("");
+    setSpeaking(true);
+    stopSpeak.current = speakText(
+      text,
+      targetLang,
+      () => {
+        stopSpeak.current = null;
+        setSpeaking(false);
+      },
+      (message) => setError(message),
+    );
+  }
+
   return (
     <div>
       <h1 className="text-2xl font-semibold tracking-tight">快速翻译</h1>
       <p className="mt-1 text-sm text-zinc-500">
-        Qwen MT Flash。回车翻译，Shift + Enter 换行。单次最多 {MAX_TRANSLATE_CHARS} 字。
+        Qwen MT Flash。回车翻译，Shift + Enter 换行。单次最多 {MAX_TRANSLATE_CHARS}{" "}
+        字。译文用千问 TTS 朗读。
       </p>
 
       <div className="mt-5 flex items-center gap-2 whitespace-nowrap">
@@ -92,7 +131,10 @@ export default function TranslatePage() {
         </button>
         <select
           value={targetLang}
-          onChange={(e) => setTargetLang(e.target.value)}
+          onChange={(e) => {
+            haltSpeak();
+            setTargetLang(e.target.value);
+          }}
           className={selectClass}
         >
           {LANGUAGES.map((lang) => (
@@ -105,6 +147,7 @@ export default function TranslatePage() {
           <button
             type="button"
             onClick={() => {
+              haltSpeak();
               setInput("");
               setOutput("");
               setError("");
@@ -144,14 +187,24 @@ export default function TranslatePage() {
         <label className="block">
           <span className="mb-1.5 flex items-center justify-between text-sm font-medium">
             译文
-            <button
-              type="button"
-              onClick={() => void copyOutput()}
-              disabled={!output}
-              className="font-normal text-teal-700 disabled:text-zinc-300"
-            >
-              {copied ? "已复制" : "复制"}
-            </button>
+            <span className="flex items-center gap-3 font-normal">
+              <button
+                type="button"
+                onClick={toggleSpeak}
+                disabled={!output.trim() || pending}
+                className="text-teal-700 disabled:text-zinc-300"
+              >
+                {speaking ? "停止" : "朗读"}
+              </button>
+              <button
+                type="button"
+                onClick={() => void copyOutput()}
+                disabled={!output}
+                className="text-teal-700 disabled:text-zinc-300"
+              >
+                {copied ? "已复制" : "复制"}
+              </button>
+            </span>
           </span>
           <textarea
             value={output}
