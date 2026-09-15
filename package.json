@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --port 3001",
     "build": "next build",
-    "start": "next start --port 3001 --hostname 127.0.0.1",
+    "start": "next start --port 3001 --hostname 0.0.0.0",
     "lint": "eslint",
     "postinstall": "node scripts/copy-pdf-worker.mjs"
   },
@@ -23,6 +23,8 @@
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@csstools/postcss-color-mix-function": "^4.0.12",
+    "@csstools/postcss-oklab-function": "^5.0.12",
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",

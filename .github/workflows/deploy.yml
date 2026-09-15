@@ -74,7 +74,7 @@ jobs:
             sleep 2
             echo "listeners on 3001 after kill:"
             ss -lptn "sport = :3001" || true
-            pm2 start ./node_modules/next/dist/bin/next --name flynt-tools -- start --port 3001 --hostname 127.0.0.1
+            pm2 start ./node_modules/next/dist/bin/next --name flynt-tools -- start --port 3001 --hostname 0.0.0.0
             pm2 save || true
             ready=0
             for i in $(seq 1 45); do

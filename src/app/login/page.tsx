@@ -1,13 +1,10 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { useRouter } from "next/navigation";
 
-function LoginForm() {
+export default function LoginPage() {
   const router = useRouter();
-  const search = useSearchParams();
-  const next = search.get("next") || "/";
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
@@ -27,6 +24,7 @@ function LoginForm() {
         setError(data.error || "登录失败");
         return;
       }
+      const next = new URLSearchParams(window.location.search).get("next") || "/";
       router.push(next.startsWith("/") ? next : "/");
       router.refresh();
     } finally {
@@ -51,7 +49,7 @@ function LoginForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoFocus
-            className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2 outline-none ring-teal-700/30 focus:border-teal-700 focus:ring-2"
+            className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2 outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700"
           />
         </label>
 
@@ -66,19 +64,5 @@ function LoginForm() {
         </button>
       </form>
     </main>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense
-      fallback={
-        <main className="flex min-h-screen items-center justify-center text-zinc-500">
-          加载中…
-        </main>
-      }
-    >
-      <LoginForm />
-    </Suspense>
   );
 }

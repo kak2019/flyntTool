@@ -45,7 +45,7 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/90 backdrop-blur">
+    <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4">
         <Link href="/" className="shrink-0 font-semibold tracking-tight text-zinc-900">
           Flynt Tools

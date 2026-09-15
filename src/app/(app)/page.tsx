@@ -18,7 +18,7 @@ export default function HomePage() {
               <li key={tool.id}>
                 <Link
                   href={tool.href}
-                  className="block h-full rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-600/40 hover:shadow-md"
+                  className="block h-full rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-600 hover:shadow-md"
                 >
                   <p className="text-xs font-medium uppercase tracking-wider text-teal-700">
                     {tool.kicker}
