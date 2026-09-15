@@ -59,4 +59,24 @@ jobs:
             tar -xzf /tmp/flynt-deploy/flynt-tools.tar.gz
             rm -rf /tmp/flynt-deploy
             npm install --omit=dev
-            pm2 restart flynt-tools || pm2 start npm --name flynt-tools -- start
+            pm2 delete flynt-tools || true
+            sleep 1
+            fuser -k 3001/tcp || true
+            sleep 1
+            pm2 start npm --name flynt-tools -- start
+            pm2 save || true
+            ready=0
+            for i in $(seq 1 30); do
+              if curl -sf --max-time 3 -o /dev/null http://127.0.0.1:3001/login; then
+                ready=1
+                break
+              fi
+              sleep 2
+            done
+            if [ "$ready" != 1 ]; then
+              echo "app did not become ready on :3001"
+              pm2 status || true
+              pm2 logs flynt-tools --lines 120 --nostream || true
+              exit 1
+            fi
+            echo "app is up"

@@ -69,6 +69,7 @@ export async function putOssObject(config: OssConfig, body: Buffer, contentType:
       "Cache-Control": "public, max-age=60",
     },
     body: new Uint8Array(body),
+    signal: AbortSignal.timeout(20_000),
   });
   if (!res.ok) {
     const err = await res.text();
@@ -80,6 +81,7 @@ async function requestOss(config: OssConfig, method: "GET" | "HEAD", signed: boo
   return fetch(objectUrl(config), {
     method,
     headers: signed ? signedHeaders(config, method) : undefined,
+    signal: AbortSignal.timeout(10_000),
   });
 }
 
