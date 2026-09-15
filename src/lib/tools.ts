@@ -145,6 +145,14 @@ export const tools: Tool[] = [
     href: "/tools/cutout",
   },
   {
+    id: "wx-qr",
+    name: "微信群码",
+    kicker: "图片",
+    category: "life",
+    description: "上传最新微信群二维码，覆盖 OSS 上的固定图片，对外链接不变。",
+    href: "/tools/wx-qr",
+  },
+  {
     id: "qr",
     name: "二维码",
     kicker: "图片",
