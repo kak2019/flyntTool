@@ -58,7 +58,7 @@ jobs:
             rm -f src/instrumentation.ts
             tar -xzf /tmp/flynt-deploy/flynt-tools.tar.gz
             rm -rf /tmp/flynt-deploy
-            npm install --omit=dev
+            npm install --omit=dev --registry=https://registry.npmmirror.com
             pm2 delete flynt-tools || true
             sleep 1
             echo "listeners on 3001 before kill:"
