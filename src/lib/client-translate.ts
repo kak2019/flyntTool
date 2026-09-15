@@ -33,7 +33,7 @@ export async function translateText(opts: {
   return text;
 }
 
-async function readSse(
+export async function readSse(
   body: ReadableStream<Uint8Array>,
   onDelta?: (full: string) => void,
 ): Promise<string> {

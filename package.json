@@ -12,6 +12,7 @@
   "dependencies": {
     "@imgly/background-removal": "^1.7.0",
     "diff": "^9.0.0",
+    "imagetracerjs": "^1.2.6",
     "jsqr": "^1.4.0",
     "jszip": "^3.10.1",
     "marked": "^18.0.12",

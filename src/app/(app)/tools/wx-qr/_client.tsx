@@ -167,7 +167,7 @@ export default function WxQrPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">微信群码</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">临场微信群码</h1>
       <p className="mt-1 text-sm text-zinc-500">
         从微信保存最新群二维码，上传后覆盖 OSS 上的同一张图。手机点「选择图片」可从相册或文件里选。
       </p>

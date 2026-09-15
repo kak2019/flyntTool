@@ -57,6 +57,14 @@ export const tools: Tool[] = [
     href: "/tools/diff",
   },
   {
+    id: "commit",
+    name: "约定式提交",
+    kicker: "Git",
+    category: "dev",
+    description: "把中文改动说明写成 feat/fix 那种英文提交信息。",
+    href: "/tools/commit",
+  },
+  {
     id: "regex",
     name: "正则测试",
     kicker: "匹配",
@@ -143,6 +151,14 @@ export const tools: Tool[] = [
     category: "life",
     description: "上传或粘贴照片，扣成透明底 PNG，可预览、下载。",
     href: "/tools/cutout",
+  },
+  {
+    id: "to-svg",
+    name: "图片转 SVG",
+    kicker: "图片",
+    category: "life",
+    description: "把 png / jpg 描成矢量 SVG，图标和扁平图效果最好。",
+    href: "/tools/to-svg",
   },
   {
     id: "wx-qr",

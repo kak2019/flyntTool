@@ -1,10 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { getDailyLearn, shuffleLearn } from "@/lib/daily-learn";
 
 export function DailyLearn() {
   const [{ poem, sentence }, setLearn] = useState(() => getDailyLearn());
+  const seen = useRef({
+    poems: new Set([poem.line]),
+    sentences: new Set([sentence.en]),
+  });
 
   return (
     <footer className="border-t border-zinc-200">
@@ -23,7 +27,7 @@ export function DailyLearn() {
         </div>
         <button
           type="button"
-          onClick={() => setLearn((current) => ({ ...current, ...shuffleLearn(current) }))}
+          onClick={() => setLearn((current) => ({ ...current, ...shuffleLearn(current, seen.current) }))}
           className="shrink-0 text-sm text-teal-700 hover:text-teal-800"
         >
           换一条
