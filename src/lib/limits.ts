@@ -1,2 +1,11 @@
 export const MAX_TRANSLATE_CHARS = 8000;
 export const MAX_COMMIT_CHARS = 2000;
+export const MAX_MIMO_CHARS = 8000;
+export const MAX_MIMO_MESSAGES = 20;
+export const MAX_MIMO_ATTACHMENTS = 6;
+export const MAX_MIMO_IMAGE_BYTES = 8 * 1024 * 1024;
+export const MAX_MIMO_FILE_BYTES = 2 * 1024 * 1024;
+export const MAX_MIMO_FILE_CHARS = 20_000;
+export const MAX_MIMO_PDF_PAGES = 15;
+export const MAX_MIMO_IMAGE_EDGE = 1600;
+export const MAX_MIMO_IMAGE_DATA = 6_000_000;

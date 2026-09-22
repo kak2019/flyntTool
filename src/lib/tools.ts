@@ -105,6 +105,14 @@ export const tools: Tool[] = [
     href: "/tools/translate",
   },
   {
+    id: "mimo",
+    name: "MiMo 问答",
+    kicker: "对话",
+    category: "info",
+    description: "小米 MiMo 流式问答，可联网搜索，可传图片和文件。",
+    href: "/tools/mimo",
+  },
+  {
     id: "md",
     name: "Markdown 预览",
     kicker: "文本",
