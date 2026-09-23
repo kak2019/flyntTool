@@ -129,6 +129,14 @@ export const tools: Tool[] = [
     href: "/tools/pdf",
   },
   {
+    id: "pdf-merge",
+    name: "PDF 合并",
+    kicker: "文档",
+    category: "info",
+    description: "按顺序把多份 PDF 的页面原样接成一个文件，在浏览器里完成。",
+    href: "/tools/pdf-merge",
+  },
+  {
     id: "patent-fig",
     name: "专利附图嵌入",
     kicker: "文档",
