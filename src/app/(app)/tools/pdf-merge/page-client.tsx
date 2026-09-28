@@ -134,7 +134,9 @@ export default function PdfMergePage() {
     setWorking(true);
     try {
       const result = await mergePdfBuffers(items.map(({ name, data }) => ({ name, data })));
-      const blob = new Blob([result.bytes], { type: "application/pdf" });
+      const buffer = new ArrayBuffer(result.bytes.byteLength);
+      new Uint8Array(buffer).set(result.bytes);
+      const blob = new Blob([buffer], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       resultUrl.current = url;
       setDownloadName(mergedPdfName(items[0].name));
