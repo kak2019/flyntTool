@@ -153,6 +153,14 @@ export const tools: Tool[] = [
     href: "/tools/news",
   },
   {
+    id: "countdown",
+    name: "倒计时",
+    kicker: "时间",
+    category: "life",
+    description: "选定日期倒计时。按系统时钟计算，页面切到后台也会继续走。",
+    href: "/tools/countdown",
+  },
+  {
     id: "fi",
     name: "财务自由",
     kicker: "人生",
