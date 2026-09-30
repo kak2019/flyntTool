@@ -410,7 +410,7 @@ export default function MimoPage() {
         {cloudflare
           ? "Cloudflare 免费模型 Nemotron 120B。不联网，也不能看图；文字和文件可以。回车发送，Shift + Enter 换行。"
           : zhipu
-            ? "智谱官方 GLM-5.3-Flash。能看图、能读文件，不联网。回车发送，Shift + Enter 换行。"
+            ? `智谱官方 ${MIMO_MODELS.find((item) => item.id === model)?.label ?? "GLM"}。能看图、能读文件，不联网。回车发送，Shift + Enter 换行。`
             : "小米 MiMo，默认开联网搜索。可上传或粘贴图片、PDF 和文本文件。回车发送，Shift + Enter 换行。"}
       </p>
 

@@ -185,6 +185,14 @@ export const tools: Tool[] = [
     href: "/tools/to-svg",
   },
   {
+    id: "shelf",
+    name: "临时文件架",
+    kicker: "文件",
+    category: "life",
+    description: "把文件放到 OSS 的 flyntpan，到期删除。分享链接不用登录。微信群码仍在 linchangweb。",
+    href: "/tools/shelf",
+  },
+  {
     id: "wx-qr",
     name: "微信群码",
     kicker: "图片",
