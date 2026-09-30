@@ -9,6 +9,8 @@ import {
   MIMO_MODELS,
   addMimoUsage,
   emptyMimoUsage,
+  isCloudflareModel,
+  isZhipuModel,
   type MimoAttachment,
   type MimoChatMessage,
   type MimoModelId,
@@ -185,6 +187,9 @@ export default function MimoPage() {
   const abortRef = useRef<AbortController | null>(null);
   const dragCount = useRef(0);
 
+  const cloudflare = isCloudflareModel(model);
+  const zhipu = isZhipuModel(model);
+  const noSearch = cloudflare || zhipu;
   const count = useMemo(() => input.trim().length, [input]);
   const overLimit = count > MAX_MIMO_CHARS;
   const canSend = (count > 0 || attachments.length > 0) && !pending && !overLimit && !reading;
@@ -281,7 +286,7 @@ export default function MimoPage() {
         messages: forApi(nextMessages),
         model,
         thinking,
-        search,
+        search: noSearch ? false : search,
         signal: ac.signal,
         onDelta: (state) => {
           gotDelta = true;
@@ -329,7 +334,11 @@ export default function MimoPage() {
         if (!gotDelta) {
           setError(
             timedOut
-              ? "等了 90 秒还没出字。小米那边多半在排队（账号并发满了），稍后再发，或先关掉联网搜索。"
+              ? cloudflare
+                ? "等了 90 秒还没出字。免费模型可能在排队，请再试一次。"
+                : zhipu
+                  ? "等了 90 秒还没出字。智谱那边可能在排队，请再试一次。"
+                  : "等了 90 秒还没出字。小米那边多半在排队（账号并发满了），稍后再发，或先关掉联网搜索。"
               : "",
           );
         }
@@ -398,7 +407,11 @@ export default function MimoPage() {
     <div>
       <h1 className="text-2xl font-semibold tracking-tight">MiMo 问答</h1>
       <p className="mt-1 text-sm text-zinc-500">
-        小米 MiMo，默认开联网搜索。可上传或粘贴图片、PDF 和文本文件。回车发送，Shift + Enter 换行。
+        {cloudflare
+          ? "Cloudflare 免费模型 Nemotron 120B。不联网，也不能看图；文字和文件可以。回车发送，Shift + Enter 换行。"
+          : zhipu
+            ? "智谱官方 GLM-5.3-Flash。能看图、能读文件，不联网。回车发送，Shift + Enter 换行。"
+            : "小米 MiMo，默认开联网搜索。可上传或粘贴图片、PDF 和文本文件。回车发送，Shift + Enter 换行。"}
       </p>
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
@@ -426,8 +439,8 @@ export default function MimoPage() {
         <label className="flex items-center gap-1.5 text-sm text-zinc-600">
           <input
             type="checkbox"
-            checked={search}
-            disabled={pending}
+            checked={noSearch ? false : search}
+            disabled={pending || noSearch}
             onChange={(e) => setSearch(e.target.checked)}
           />
           联网搜索

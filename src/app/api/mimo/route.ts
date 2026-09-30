@@ -6,7 +6,9 @@ import {
   MAX_MIMO_MESSAGES,
 } from "@/lib/limits";
 import {
+  isCloudflareModel,
   isMimoModel,
+  isZhipuModel,
   normalizeMimoAttachments,
   toMimoUpstreamMessages,
   type MimoChatMessage,
@@ -66,11 +68,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "请求太频繁，稍等再试" }, { status: 429 });
   }
 
-  const apiKey = process.env.MIMO_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "未配置 MIMO_API_KEY" }, { status: 500 });
-  }
-
   const body = (await req.json().catch(() => ({}))) as {
     messages?: MimoChatMessage[];
     model?: string;
@@ -108,6 +105,17 @@ export async function POST(req: NextRequest) {
   const model = isMimoModel(String(body.model ?? ""))
     ? String(body.model)
     : "mimo-v2.6-pro-ultraspeed";
+  if (isCloudflareModel(model)) {
+    return cloudflareChat(req, messages, model, body.thinking === true, body.stream !== false);
+  }
+  if (isZhipuModel(model)) {
+    return zhipuChat(req, messages, model, body.thinking === true, body.stream !== false);
+  }
+
+  const apiKey = process.env.MIMO_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json({ error: "未配置 MIMO_API_KEY" }, { status: 500 });
+  }
   const thinking = body.thinking === true;
   const search = body.search !== false;
   const stream = body.stream !== false;
@@ -220,6 +228,308 @@ export async function POST(req: NextRequest) {
           if (done) break;
           if (value) controller.enqueue(value);
         }
+      } catch (err) {
+        if (req.signal.aborted) return;
+        const message = err instanceof Error ? err.message : "上游请求失败";
+        send(`data: ${JSON.stringify({ error: message })}\n\n`);
+      } finally {
+        clearInterval(ping);
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(out, {
+    headers: {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
+    },
+  });
+}
+
+function cloudflareSystemPrompt() {
+  const today = new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "Asia/Shanghai",
+  }).format(new Date());
+  return `You are a helpful assistant. Today is ${today}. Answer in the user's language unless they ask otherwise.`;
+}
+
+function formatCloudflareError(status: number, raw: string) {
+  let detail = raw.slice(0, 280);
+  try {
+    const parsed = JSON.parse(raw) as {
+      error?: { message?: string } | string;
+      errors?: { message?: string }[];
+    };
+    if (typeof parsed.error === "string") detail = parsed.error;
+    else if (parsed.error?.message) detail = parsed.error.message;
+    else if (parsed.errors?.[0]?.message) detail = parsed.errors[0].message;
+  } catch {
+    // keep raw slice
+  }
+  if (/insufficient balance|add money|byok/i.test(detail)) {
+    return "这个模型要另外付费，免费额度用不了。请换 Nemotron 120B。";
+  }
+  return `Cloudflare 接口失败（${status}）：${detail}`;
+}
+
+function rewriteCloudflareLine(line: string, thinking: boolean) {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith("data:")) return line;
+  const payload = trimmed.slice(5).trim();
+  if (!payload || payload === "[DONE]") return line;
+  try {
+    const json = JSON.parse(payload) as {
+      choices?: { delta?: { reasoning?: string; reasoning_content?: string }; message?: { reasoning?: string; reasoning_content?: string } }[];
+    };
+    const choice = json.choices?.[0];
+    for (const holder of [choice?.delta, choice?.message]) {
+      if (!holder) continue;
+      if (typeof holder.reasoning === "string") {
+        if (thinking) holder.reasoning_content = holder.reasoning;
+        delete holder.reasoning;
+      }
+      if (!thinking) delete holder.reasoning_content;
+    }
+    return `data: ${JSON.stringify(json)}`;
+  } catch {
+    return line;
+  }
+}
+
+async function cloudflareChat(
+  req: NextRequest,
+  messages: MimoChatMessage[],
+  model: string,
+  thinking: boolean,
+  stream: boolean,
+) {
+  if (messages.some((item) => item.attachments?.some((att) => att.kind === "image"))) {
+    return NextResponse.json(
+      { error: "Nemotron 不能看图片。请换回 MiMo，或去掉图片再发。" },
+      { status: 400 },
+    );
+  }
+  const token = process.env.CLOUDFLARE_API_TOKEN;
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  if (!token || !accountId) {
+    return NextResponse.json({ error: "未配置 Cloudflare Workers AI" }, { status: 500 });
+  }
+
+  const upstreamMessages = toMimoUpstreamMessages(messages).map((item) => ({
+    role: item.role,
+    content:
+      typeof item.content === "string"
+        ? item.content
+        : item.content.flatMap((part) => (part.type === "text" ? [part.text] : [])).join("\n\n"),
+  }));
+  const payload = {
+    model,
+    stream,
+    max_tokens: 4096,
+    messages: [{ role: "system", content: cloudflareSystemPrompt() }, ...upstreamMessages],
+  };
+  const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/v1/chat/completions`;
+
+  if (!stream) {
+    const upstream = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      signal: req.signal,
+      body: JSON.stringify(payload),
+    });
+    if (!upstream.ok) {
+      return NextResponse.json(
+        { error: formatCloudflareError(upstream.status, await upstream.text()) },
+        { status: 502 },
+      );
+    }
+    const data = (await upstream.json()) as {
+      choices?: { message?: { content?: string; reasoning?: string } }[];
+      usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+    };
+    const message = data.choices?.[0]?.message;
+    return NextResponse.json({
+      text: message?.content ?? "",
+      reasoning: thinking ? (message?.reasoning ?? "") : "",
+      sources: [],
+      usage: data.usage ?? null,
+    });
+  }
+
+  const encoder = new TextEncoder();
+  const out = new ReadableStream({
+    async start(controller) {
+      const send = (chunk: string) => controller.enqueue(encoder.encode(chunk));
+      send(": waiting\n\n");
+      const ping = setInterval(() => {
+        try {
+          send(": ping\n\n");
+        } catch {
+          clearInterval(ping);
+        }
+      }, 3000);
+      try {
+        const upstream = await fetch(url, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          signal: req.signal,
+          body: JSON.stringify(payload),
+        });
+        if (!upstream.ok) {
+          send(`data: ${JSON.stringify({ error: formatCloudflareError(upstream.status, await upstream.text()) })}\n\n`);
+          return;
+        }
+        const reader = upstream.body?.getReader();
+        if (!reader) {
+          send(`data: ${JSON.stringify({ error: "Cloudflare 没有返回内容" })}\n\n`);
+          return;
+        }
+        const decoder = new TextDecoder();
+        let buffer = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value ?? new Uint8Array(), { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+          for (const line of lines) {
+            const next = rewriteCloudflareLine(line, thinking);
+            if (next) send(`${next}\n`);
+          }
+        }
+        if (buffer.trim()) send(`${rewriteCloudflareLine(buffer, thinking)}\n`);
+      } catch (err) {
+        if (req.signal.aborted) return;
+        const message = err instanceof Error ? err.message : "上游请求失败";
+        send(`data: ${JSON.stringify({ error: message })}\n\n`);
+      } finally {
+        clearInterval(ping);
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(out, {
+    headers: {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
+    },
+  });
+}
+
+function formatZhipuError(status: number, raw: string) {
+  let detail = raw.slice(0, 280);
+  try {
+    const parsed = JSON.parse(raw) as { error?: { message?: string } | string };
+    if (typeof parsed.error === "string") detail = parsed.error;
+    else if (parsed.error?.message) detail = parsed.error.message;
+  } catch {
+    // keep raw slice
+  }
+  return `智谱接口失败（${status}）：${detail}`;
+}
+
+async function zhipuChat(
+  req: NextRequest,
+  messages: MimoChatMessage[],
+  model: string,
+  thinking: boolean,
+  stream: boolean,
+) {
+  const apiKey = process.env.ZHIPU_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json({ error: "未配置 ZHIPU_API_KEY" }, { status: 500 });
+  }
+  const baseUrl = (process.env.ZHIPU_BASE_URL || "https://open.bigmodel.cn/api/paas/v4").replace(/\/$/, "");
+  const payload = {
+    model,
+    stream,
+    stream_options: stream ? { include_usage: true } : undefined,
+    temperature: 1,
+    top_p: 0.95,
+    max_tokens: 4096,
+    thinking: { type: "enabled", clear_thinking: false },
+    messages: [{ role: "system", content: cloudflareSystemPrompt() }, ...toMimoUpstreamMessages(messages)],
+  };
+  const url = `${baseUrl}/chat/completions`;
+
+  if (!stream) {
+    const upstream = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      signal: req.signal,
+      body: JSON.stringify(payload),
+    });
+    if (!upstream.ok) {
+      return NextResponse.json(
+        { error: formatZhipuError(upstream.status, await upstream.text()) },
+        { status: 502 },
+      );
+    }
+    const data = (await upstream.json()) as {
+      choices?: { message?: { content?: string; reasoning_content?: string } }[];
+      usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+    };
+    const message = data.choices?.[0]?.message;
+    return NextResponse.json({
+      text: message?.content ?? "",
+      reasoning: thinking ? (message?.reasoning_content ?? "") : "",
+      sources: [],
+      usage: data.usage ?? null,
+    });
+  }
+
+  const encoder = new TextEncoder();
+  const out = new ReadableStream({
+    async start(controller) {
+      const send = (chunk: string) => controller.enqueue(encoder.encode(chunk));
+      send(": waiting\n\n");
+      const ping = setInterval(() => {
+        try {
+          send(": ping\n\n");
+        } catch {
+          clearInterval(ping);
+        }
+      }, 3000);
+      try {
+        const upstream = await fetch(url, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+          signal: req.signal,
+          body: JSON.stringify(payload),
+        });
+        if (!upstream.ok) {
+          send(`data: ${JSON.stringify({ error: formatZhipuError(upstream.status, await upstream.text()) })}\n\n`);
+          return;
+        }
+        const reader = upstream.body?.getReader();
+        if (!reader) {
+          send(`data: ${JSON.stringify({ error: "智谱没有返回内容" })}\n\n`);
+          return;
+        }
+        const decoder = new TextDecoder();
+        let buffer = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value ?? new Uint8Array(), { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+          for (const line of lines) {
+            const next = rewriteCloudflareLine(line, thinking);
+            if (next) send(`${next}\n`);
+          }
+        }
+        if (buffer.trim()) send(`${rewriteCloudflareLine(buffer, thinking)}\n`);
       } catch (err) {
         if (req.signal.aborted) return;
         const message = err instanceof Error ? err.message : "上游请求失败";

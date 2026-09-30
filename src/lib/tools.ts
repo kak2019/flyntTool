@@ -109,7 +109,7 @@ export const tools: Tool[] = [
     name: "MiMo 问答",
     kicker: "对话",
     category: "info",
-    description: "小米 MiMo 流式问答，可联网搜索，可传图片和文件。",
+    description: "小米 MiMo、智谱 GLM 或 Cloudflare 免费模型。MiMo 可联网，GLM 能看图。",
     href: "/tools/mimo",
   },
   {

@@ -1,6 +1,8 @@
 export const MIMO_MODELS = [
-  { id: "mimo-v2.6-pro-ultraspeed", label: "UltraSpeed" },
-  { id: "mimo-v2.6-pro", label: "Pro" },
+  { id: "mimo-v2.6-pro-ultraspeed", label: "MiMo UltraSpeed", provider: "mimo" },
+  { id: "mimo-v2.6-pro", label: "MiMo Pro", provider: "mimo" },
+  { id: "@cf/nvidia/nemotron-3-120b-a12b", label: "Nemotron 120B（免费）", provider: "cloudflare" },
+  { id: "glm-5.3-flash", label: "GLM-5.3-Flash", provider: "zhipu" },
 ] as const;
 
 export type MimoModelId = (typeof MIMO_MODELS)[number]["id"];
@@ -154,4 +156,12 @@ export function parseMimoUsage(raw?: {
 
 export function isMimoModel(value: string): value is MimoModelId {
   return MIMO_MODELS.some((model) => model.id === value);
+}
+
+export function isCloudflareModel(value: string) {
+  return MIMO_MODELS.some((model) => model.id === value && model.provider === "cloudflare");
+}
+
+export function isZhipuModel(value: string) {
+  return MIMO_MODELS.some((model) => model.id === value && model.provider === "zhipu");
 }
