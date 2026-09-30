@@ -21,13 +21,16 @@ type Overlay = {
   y: number;
   cx: number;
   cy: number;
-  kind: "line" | "text" | "brace";
+  kind: "line" | "text" | "brace" | "ellipse";
   text: string;
   fontPt: number;
   flipH: boolean;
   flipV: boolean;
   strokeEmu: number;
   geom: string;
+  color: string;
+  bold: boolean;
+  textAnchor: "middle" | "top";
 };
 
 type InlinePic = {
@@ -84,15 +87,37 @@ function parsePage(xml: string) {
   const pageW = sz ? intAttr(sz[0], "w:w") * TWIP_TO_EMU : 11906 * TWIP_TO_EMU;
   const left = mar ? intAttr(mar[0], "w:left") * TWIP_TO_EMU : 1526 * TWIP_TO_EMU;
   const right = mar ? intAttr(mar[0], "w:right") * TWIP_TO_EMU : 965 * TWIP_TO_EMU;
-  return { contentW: Math.max(pageW - left - right, 1), left };
+  const top = mar ? intAttr(mar[0], "w:top") * TWIP_TO_EMU : 1440 * TWIP_TO_EMU;
+  return { contentW: Math.max(pageW - left - right, 1), left, top };
+}
+
+function enclosingParagraph(xml: string, at: number) {
+  let from = at;
+  while (from > 0) {
+    const spaced = xml.lastIndexOf("<w:p ", from - 1);
+    const plain = xml.lastIndexOf("<w:p>", from - 1);
+    const p = Math.max(spaced, plain);
+    if (p < 0) return -1;
+    const openBox = xml.lastIndexOf("<w:txbxContent", p);
+    const closeBox = xml.lastIndexOf("</w:txbxContent>", p);
+    if (openBox > closeBox) {
+      from = p;
+      continue;
+    }
+    return p;
+  }
+  return -1;
 }
 
 function paragraphCentered(xml: string, at: number) {
-  const p = xml.lastIndexOf("<w:p", at);
+  const p = enclosingParagraph(xml, at);
   if (p < 0) return false;
-  const pPrClose = xml.indexOf("</w:pPr>", p);
-  if (pPrClose < 0 || pPrClose > at) return false;
-  return /<w:jc w:val="center"/.test(xml.slice(p, pPrClose));
+  const pPr = xml.indexOf("<w:pPr", p);
+  const run = xml.indexOf("<w:r", p);
+  if (pPr < 0 || (run >= 0 && pPr > run)) return false;
+  const pPrClose = xml.indexOf("</w:pPr>", pPr);
+  if (pPrClose < 0) return false;
+  return /<w:jc w:val="center"/.test(xml.slice(pPr, pPrClose));
 }
 
 function parseInlines(xml: string): InlinePic[] {
@@ -156,7 +181,101 @@ function parseOverlay(raw: string): Overlay | null {
     flipV: /flipV="1"/.test(xfrm),
     strokeEmu: Number(firstMatch(xml, /<a:ln w="(\d+)"/) || "6350"),
     geom,
+    color: "#111",
+    bold: false,
+    textAnchor: "middle",
   };
+}
+
+const PT_TO_EMU = 12700;
+
+function styleValue(style: string, key: string) {
+  return style.match(new RegExp(`(?:^|;)${key}:([^;]+)`))?.[1]?.trim() ?? "";
+}
+
+function ptToEmu(raw: string) {
+  const n = Number.parseFloat(raw);
+  return Number.isFinite(n) ? Math.round(n * PT_TO_EMU) : 0;
+}
+
+function cssColor(value: string) {
+  const v = value.trim().toLowerCase();
+  if (!v) return "";
+  if (v === "red") return "#ff0000";
+  if (/^[0-9a-f]{6}$/.test(v)) return `#${v}`;
+  if (/^#[0-9a-f]{3,8}$/.test(v)) return v;
+  return "";
+}
+
+function findShapes(xml: string) {
+  const blocks: string[] = [];
+  const re = /<v:(shape|oval|rect|roundrect)\b/g;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(xml))) {
+    const tag = match[1];
+    const gt = xml.indexOf(">", match.index);
+    if (gt < 0) break;
+    if (xml[gt - 1] === "/") {
+      blocks.push(xml.slice(match.index, gt + 1));
+      re.lastIndex = gt + 1;
+      continue;
+    }
+    const close = xml.indexOf(`</v:${tag}>`, gt);
+    if (close < 0) break;
+    const end = close + `</v:${tag}>`.length;
+    blocks.push(xml.slice(match.index, end));
+    re.lastIndex = end;
+  }
+  return blocks;
+}
+
+/** Legacy w:pict callouts. Omitted origin means column / paragraph, same as Word. */
+function parseVmlPict(raw: string, pageLeft: number, pageTop: number): Overlay[] {
+  const overlays: Overlay[] = [];
+  for (const shape of findShapes(raw)) {
+    const open = shape.slice(0, shape.indexOf(">"));
+    const style = firstMatch(open, /\bstyle="([^"]*)"/);
+    const hRel = styleValue(style, "mso-position-horizontal-relative");
+    const vRel = styleValue(style, "mso-position-vertical-relative");
+    const cx = ptToEmu(styleValue(style, "width"));
+    const cy = ptToEmu(styleValue(style, "height"));
+    if (!cx && !cy) continue;
+
+    let x = ptToEmu(styleValue(style, "margin-left"));
+    let y = ptToEmu(styleValue(style, "margin-top"));
+    if (hRel === "page") x -= pageLeft;
+    if (vRel === "page") y -= pageTop;
+
+    const text = overlayText(shape);
+    const isOval = /^<v:oval\b/.test(shape);
+    if (!text && !isOval) continue;
+
+    const stroked = !/\bstroked="f"/.test(open);
+    const color =
+      cssColor(firstMatch(open, /\bstrokecolor="([^"]+)"/)) ||
+      cssColor(firstMatch(shape, /<w:color w:val="([^"]+)"/)) ||
+      "#111";
+    const sz = Number(firstMatch(shape, /w:sz w:val="(\d+)"/) || "24");
+    const weight = firstMatch(open, /\bstrokeweight="([^"]+)"/) || styleValue(style, "strokeweight");
+    overlays.push({
+      x,
+      y,
+      cx,
+      cy,
+      kind: isOval ? "ellipse" : "text",
+      text,
+      fontPt: sz / 2,
+      flipH: false,
+      flipV: false,
+      strokeEmu: weight ? ptToEmu(weight) : 9525,
+      geom: isOval ? "ellipse" : "rect",
+      color: text && !isOval ? cssColor(firstMatch(shape, /<w:color w:val="([^"]+)"/)) || color : color,
+      bold: /<w:b\/>/.test(shape) || /<w:b\s[^>]*w:val="(?:1|true|on)"/.test(shape),
+      textAnchor: "top",
+    });
+    if (!stroked && isOval) overlays.pop();
+  }
+  return overlays;
 }
 
 function nextRelId(rels: string) {
@@ -226,13 +345,29 @@ async function composite(pic: ImageBitmap, picX: number, picY: number, picCx: nu
   ctx.drawImage(pic, toX(picX), toY(picY), toS(picCx), toS(picCy));
 
   ctx.lineCap = "round";
-  ctx.strokeStyle = "#111";
-  ctx.fillStyle = "#111";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
   for (const ov of overlays) {
+    ctx.strokeStyle = ov.color;
+    ctx.fillStyle = ov.color;
+    if (ov.kind === "ellipse") {
+      ctx.lineWidth = Math.max(1.25, toS(ov.strokeEmu));
+      ctx.beginPath();
+      ctx.ellipse(
+        toX(ov.x + ov.cx / 2),
+        toY(ov.y + ov.cy / 2),
+        Math.max(1, toS(ov.cx) / 2),
+        Math.max(1, toS(ov.cy) / 2),
+        0,
+        0,
+        Math.PI * 2,
+      );
+      ctx.stroke();
+      continue;
+    }
     if (ov.kind === "brace") {
+      ctx.strokeStyle = "#111";
       const pointRight = ov.geom === "rightBrace" ? !ov.flipH : ov.flipH;
       drawBrace(
         ctx,
@@ -246,6 +381,7 @@ async function composite(pic: ImageBitmap, picX: number, picY: number, picCx: nu
       continue;
     }
     if (ov.kind === "line") {
+      ctx.strokeStyle = "#111";
       const x1 = toX(ov.x + (ov.flipH ? ov.cx : 0));
       const y1 = toY(ov.y + (ov.flipV ? ov.cy : 0));
       const x2 = toX(ov.x + (ov.flipH ? 0 : ov.cx));
@@ -258,8 +394,15 @@ async function composite(pic: ImageBitmap, picX: number, picY: number, picCx: nu
       continue;
     }
     const fontPx = Math.max(11, ov.fontPt * (96 / 72) * SCALE);
-    ctx.font = `${fontPx}px Tahoma, Arial, sans-serif`;
-    ctx.fillText(ov.text, toX(ov.x + ov.cx / 2), toY(ov.y + ov.cy / 2));
+    ctx.font = `${ov.bold ? "bold " : ""}${fontPx}px SimSun, "Microsoft YaHei", Tahoma, Arial, sans-serif`;
+    const textX = toX(ov.x + ov.cx / 2);
+    if (ov.textAnchor === "top") {
+      ctx.textBaseline = "top";
+      ctx.fillText(ov.text, textX, toY(ov.y) + fontPx * 0.2);
+      ctx.textBaseline = "middle";
+    } else {
+      ctx.fillText(ov.text, textX, toY(ov.y + ov.cy / 2));
+    }
   }
 
   const blob = await new Promise<Blob>((resolve, reject) => {
@@ -282,7 +425,7 @@ export async function flattenPatentFigures(file: File, onProgress: FlattenProgre
 
   let xml = await docFile.async("string");
   let rels = await relsFile.async("string");
-  const { contentW } = parsePage(xml);
+  const { contentW, left, top } = parsePage(xml);
 
   const relMap = new Map<string, string>();
   for (const m of rels.matchAll(/Id="([^"]+)"[^>]*Target="([^"]+)"/g)) {
@@ -293,7 +436,8 @@ export async function flattenPatentFigures(file: File, onProgress: FlattenProgre
   if (inlines.length === 0) throw new Error("文档里没有嵌入图片。");
 
   const alts = findBlocks(xml, "<mc:AlternateContent>", "</mc:AlternateContent>");
-  onProgress(`找到 ${inlines.length} 张图，${alts.length} 个浮动对象`);
+  const picts = findBlocks(xml, "<w:pict", "</w:pict>");
+  onProgress(`找到 ${inlines.length} 张图，${alts.length + picts.length} 个浮动对象`);
 
   const previews: { label: string; url: string }[] = [];
   const removals: { start: number; end: number }[] = [];
@@ -305,7 +449,14 @@ export async function flattenPatentFigures(file: File, onProgress: FlattenProgre
     const pic = inlines[i];
     const prevEnd = i === 0 ? 0 : inlines[i - 1].end;
     const owned = alts.filter((a) => a.start >= prevEnd && a.end <= pic.start);
-    const overlays = owned.map((a) => parseOverlay(a.xml)).filter((x): x is Overlay => Boolean(x));
+    const vmlOwned = picts
+      .filter((a) => a.start >= prevEnd && a.end <= pic.start)
+      .map((block) => ({ block, overlays: parseVmlPict(block.xml, left, top) }))
+      .filter((item) => item.overlays.length > 0);
+    const overlays = [
+      ...owned.map((a) => parseOverlay(a.xml)).filter((x): x is Overlay => Boolean(x)),
+      ...vmlOwned.flatMap((item) => item.overlays),
+    ];
 
     if (overlays.length === 0) {
       skipped += 1;
@@ -326,9 +477,13 @@ export async function flattenPatentFigures(file: File, onProgress: FlattenProgre
 
     onProgress(`正在合成第 ${i + 1} / ${inlines.length} 张图（${overlays.length} 个标号/引线）`);
     const image = await loadImage(await media.async("uint8array"));
-    // Inline drawings in these files sit in the column; Word visually centers them.
-    // Callouts use column-relative X, so the picture origin must match that.
-    const picX = Math.max(0, (contentW - pic.cx) / 2);
+    // DrawingML callouts are column-relative and those pictures sit in the center
+    // of the column. Legacy VML uses the same column, and follows the paragraph
+    // alignment: a centered picture starts at (contentW - width) / 2.
+    const picX =
+      vmlOwned.length > 0 && owned.length === 0 && !pic.centered
+        ? 0
+        : Math.max(0, (contentW - pic.cx) / 2);
     const picY = 0;
     const out = await composite(image, picX, picY, pic.cx, pic.cy, overlays);
     image.close();
@@ -348,6 +503,7 @@ export async function flattenPatentFigures(file: File, onProgress: FlattenProgre
       .replace(/<a:ext cx="\d+" cy="\d+"/, `<a:ext cx="${Math.round(out.widthEmu)}" cy="${Math.round(out.heightEmu)}"`);
     inlinePatches.push({ start: pic.start, end: pic.end, xml: nextXml });
     for (const a of owned) removals.push({ start: a.start, end: a.end });
+    for (const item of vmlOwned) removals.push({ start: item.block.start, end: item.block.end });
     previews.push({ label: `图 ${i + 1}`, url: out.url });
     flattened += 1;
   }

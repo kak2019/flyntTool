@@ -141,7 +141,7 @@ export const tools: Tool[] = [
     name: "专利附图嵌入",
     kicker: "文档",
     category: "info",
-    description: "把附图标号和引线合成进图片并改成嵌入型，「图 1」标题不进图。",
+    description: "把附图标号、引线和圆圈合成进图片并改成嵌入型，「图 1」标题不进图。",
     href: "/tools/patent-fig",
   },
   {

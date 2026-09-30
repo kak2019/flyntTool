@@ -91,7 +91,7 @@ export default function PatentFigPage() {
     <div>
       <h1 className="text-2xl font-semibold tracking-tight">专利附图嵌入</h1>
       <p className="mt-1 max-w-2xl text-sm leading-6 text-zinc-500">
-        把附图上的标号文本框、引线合成进图片，并改成嵌入型。正文里的「图 1」「图 2」标题不会进图。全程在浏览器里处理，文件不上传服务器。
+        把附图上的标号文本框、引线、红圈合成进图片，并改成嵌入型。旧版文本框也能认。正文里的「图 1」「图 2」标题不会进图。全程在浏览器里处理，文件不上传服务器。
       </p>
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
