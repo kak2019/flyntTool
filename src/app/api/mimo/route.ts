@@ -106,10 +106,10 @@ export async function POST(req: NextRequest) {
     ? String(body.model)
     : "mimo-v2.6-pro-ultraspeed";
   if (isCloudflareModel(model)) {
-    return cloudflareChat(req, messages, model, body.thinking === true, body.stream !== false);
+    return cloudflareChat(req, messages, model, body.thinking === true, body.search !== false, body.stream !== false);
   }
   if (isZhipuModel(model)) {
-    return zhipuChat(req, messages, model, body.thinking === true, body.stream !== false);
+    return zhipuChat(req, messages, model, body.thinking === true, body.search !== false, body.stream !== false);
   }
 
   const apiKey = process.env.MIMO_API_KEY;
@@ -249,7 +249,7 @@ export async function POST(req: NextRequest) {
   });
 }
 
-function cloudflareSystemPrompt() {
+function cloudflareSystemPrompt(searchNote?: string) {
   const today = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
     year: "numeric",
@@ -257,7 +257,79 @@ function cloudflareSystemPrompt() {
     day: "numeric",
     timeZone: "Asia/Shanghai",
   }).format(new Date());
-  return `You are a helpful assistant. Today is ${today}. Answer in the user's language unless they ask otherwise.`;
+  const base = `You are a helpful assistant. Today is ${today}. Answer in the user's language unless they ask otherwise.`;
+  return searchNote ? `${base}\n\n${searchNote}` : base;
+}
+
+type WebHit = { url: string; title: string; site?: string; content: string };
+
+function searchQueryFrom(messages: MimoChatMessage[]) {
+  const last = [...messages].reverse().find((item) => item.role === "user");
+  return (last?.content ?? "").replace(/\s+/g, " ").trim().slice(0, 120);
+}
+
+async function zhipuWebSearch(query: string, signal: AbortSignal) {
+  const apiKey = process.env.ZHIPU_API_KEY;
+  if (!apiKey) throw new Error("未配置 ZHIPU_API_KEY，无法联网搜索");
+  const baseUrl = (process.env.ZHIPU_BASE_URL || "https://open.bigmodel.cn/api/paas/v4").replace(/\/$/, "");
+  const res = await fetch(`${baseUrl}/web_search`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    signal,
+    body: JSON.stringify({
+      search_engine: "search-prime",
+      search_query: query,
+      count: 5,
+    }),
+  });
+  if (!res.ok) {
+    const raw = await res.text();
+    throw new Error(formatZhipuError(res.status, raw).replace("智谱接口失败", "智谱搜索失败"));
+  }
+  const data = (await res.json()) as {
+    search_result?: { title?: string; link?: string; content?: string; media?: string }[];
+  };
+  const hits: WebHit[] = [];
+  for (const item of data.search_result ?? []) {
+    const url = String(item.link ?? "").trim();
+    if (!url) continue;
+    hits.push({
+      url,
+      title: String(item.title || url).trim().slice(0, 160),
+      site: String(item.media ?? "").trim().slice(0, 80) || undefined,
+      content: String(item.content ?? "").trim().slice(0, 500),
+    });
+  }
+  return hits;
+}
+
+function searchNote(hits: WebHit[]) {
+  if (!hits.length) {
+    return "Web search returned no results. Say so if the question needs current facts, and do not invent sources.";
+  }
+  const lines = hits.map((hit, i) => {
+    const site = hit.site ? `\n${hit.site}` : "";
+    return `[${i + 1}] ${hit.title}${site}\n${hit.url}\n${hit.content}`;
+  });
+  return `Use these web search results when the question needs current facts. Cite the page title. Do not invent links.\n\n${lines.join("\n\n")}`;
+}
+
+function sourceEvent(hits: WebHit[]) {
+  if (!hits.length) return "";
+  return `data: ${JSON.stringify({
+    annotations: hits.map((hit) => ({ url: hit.url, title: hit.title, site_name: hit.site ?? "" })),
+  })}\n\n`;
+}
+
+async function gatherSearch(messages: MimoChatMessage[], search: boolean, signal: AbortSignal) {
+  if (!search) return [] as WebHit[];
+  const query = searchQueryFrom(messages);
+  if (query.length < 2) return [];
+  return zhipuWebSearch(query, signal);
+}
+
+function publicSources(hits: WebHit[]) {
+  return hits.map((hit) => ({ url: hit.url, title: hit.title, site: hit.site }));
 }
 
 function formatCloudflareError(status: number, raw: string) {
@@ -308,6 +380,7 @@ async function cloudflareChat(
   messages: MimoChatMessage[],
   model: string,
   thinking: boolean,
+  search: boolean,
   stream: boolean,
 ) {
   if (messages.some((item) => item.attachments?.some((att) => att.kind === "image"))) {
@@ -321,6 +394,14 @@ async function cloudflareChat(
   if (!token || !accountId) {
     return NextResponse.json({ error: "未配置 Cloudflare Workers AI" }, { status: 500 });
   }
+  let hits: WebHit[] = [];
+  try {
+    hits = await gatherSearch(messages, search, req.signal);
+  } catch (err) {
+    if (req.signal.aborted) return new Response(null, { status: 499 });
+    const message = err instanceof Error ? err.message : "联网搜索失败";
+    return NextResponse.json({ error: message }, { status: 502 });
+  }
 
   const upstreamMessages = toMimoUpstreamMessages(messages).map((item) => ({
     role: item.role,
@@ -333,7 +414,7 @@ async function cloudflareChat(
     model,
     stream,
     max_tokens: 4096,
-    messages: [{ role: "system", content: cloudflareSystemPrompt() }, ...upstreamMessages],
+    messages: [{ role: "system", content: cloudflareSystemPrompt(search ? searchNote(hits) : undefined) }, ...upstreamMessages],
   };
   const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/v1/chat/completions`;
 
@@ -358,7 +439,7 @@ async function cloudflareChat(
     return NextResponse.json({
       text: message?.content ?? "",
       reasoning: thinking ? (message?.reasoning ?? "") : "",
-      sources: [],
+      sources: publicSources(hits),
       usage: data.usage ?? null,
     });
   }
@@ -368,6 +449,7 @@ async function cloudflareChat(
     async start(controller) {
       const send = (chunk: string) => controller.enqueue(encoder.encode(chunk));
       send(": waiting\n\n");
+      send(sourceEvent(hits));
       const ping = setInterval(() => {
         try {
           send(": ping\n\n");
@@ -443,11 +525,20 @@ async function zhipuChat(
   messages: MimoChatMessage[],
   model: string,
   thinking: boolean,
+  search: boolean,
   stream: boolean,
 ) {
   const apiKey = process.env.ZHIPU_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "未配置 ZHIPU_API_KEY" }, { status: 500 });
+  }
+  let hits: WebHit[] = [];
+  try {
+    hits = await gatherSearch(messages, search, req.signal);
+  } catch (err) {
+    if (req.signal.aborted) return new Response(null, { status: 499 });
+    const message = err instanceof Error ? err.message : "联网搜索失败";
+    return NextResponse.json({ error: message }, { status: 502 });
   }
   const baseUrl = (process.env.ZHIPU_BASE_URL || "https://open.bigmodel.cn/api/paas/v4").replace(/\/$/, "");
   const payload = {
@@ -458,7 +549,10 @@ async function zhipuChat(
     top_p: 0.95,
     max_tokens: 4096,
     thinking: { type: "enabled", clear_thinking: false },
-    messages: [{ role: "system", content: cloudflareSystemPrompt() }, ...toMimoUpstreamMessages(messages)],
+    messages: [
+      { role: "system", content: cloudflareSystemPrompt(search ? searchNote(hits) : undefined) },
+      ...toMimoUpstreamMessages(messages),
+    ],
   };
   const url = `${baseUrl}/chat/completions`;
 
@@ -483,7 +577,7 @@ async function zhipuChat(
     return NextResponse.json({
       text: message?.content ?? "",
       reasoning: thinking ? (message?.reasoning_content ?? "") : "",
-      sources: [],
+      sources: publicSources(hits),
       usage: data.usage ?? null,
     });
   }
@@ -493,6 +587,7 @@ async function zhipuChat(
     async start(controller) {
       const send = (chunk: string) => controller.enqueue(encoder.encode(chunk));
       send(": waiting\n\n");
+      send(sourceEvent(hits));
       const ping = setInterval(() => {
         try {
           send(": ping\n\n");

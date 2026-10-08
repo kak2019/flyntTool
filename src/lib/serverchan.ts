@@ -20,7 +20,7 @@ export function hasServerChan(): boolean {
   return keys().length > 0;
 }
 
-export async function scSend(title: string, desp: string, short?: string): Promise<void> {
+export async function scSend(title: string, desp: string, short?: string, tags = "大乐透"): Promise<void> {
   const list = keys();
   if (!list.length) throw new Error("没配 Server酱 SendKey");
 
@@ -29,7 +29,7 @@ export async function scSend(title: string, desp: string, short?: string): Promi
     const isSc3 = /^sctp/i.test(key);
     const body: Record<string, string> = { title, desp };
     if (short) body.short = short;
-    if (isSc3) body.tags = "大乐透";
+    if (isSc3) body.tags = tags;
     try {
       const res = await fetch(sendUrl(key), {
         method: "POST",

@@ -101,7 +101,7 @@ function Bubble({ item, waitSec }: { item: ChatItem; waitSec: number }) {
 
   if (item.role === "user") {
     return (
-      <div className="ml-auto max-w-[85%] rounded-2xl bg-teal-700 px-4 py-3 text-sm leading-6 text-white">
+      <div className="ml-auto w-fit max-w-[85%] rounded-2xl bg-teal-700 px-4 py-3 text-sm leading-6 text-white">
         {images.length ? (
           <div className="mb-2 flex flex-wrap gap-2">
             {images.map((img) => (
@@ -122,7 +122,7 @@ function Bubble({ item, waitSec }: { item: ChatItem; waitSec: number }) {
             ))}
           </ul>
         ) : null}
-        {item.content ? <p className="whitespace-pre-wrap">{item.content}</p> : null}
+        {item.content ? <p className="whitespace-pre-wrap break-words">{item.content}</p> : null}
       </div>
     );
   }
@@ -189,7 +189,6 @@ export default function MimoPage() {
 
   const cloudflare = isCloudflareModel(model);
   const zhipu = isZhipuModel(model);
-  const noSearch = cloudflare || zhipu;
   const count = useMemo(() => input.trim().length, [input]);
   const overLimit = count > MAX_MIMO_CHARS;
   const canSend = (count > 0 || attachments.length > 0) && !pending && !overLimit && !reading;
@@ -286,7 +285,7 @@ export default function MimoPage() {
         messages: forApi(nextMessages),
         model,
         thinking,
-        search: noSearch ? false : search,
+        search,
         signal: ac.signal,
         onDelta: (state) => {
           gotDelta = true;
@@ -408,9 +407,9 @@ export default function MimoPage() {
       <h1 className="text-2xl font-semibold tracking-tight">MiMo 问答</h1>
       <p className="mt-1 text-sm text-zinc-500">
         {cloudflare
-          ? "Cloudflare 免费模型 Nemotron 120B。不联网，也不能看图；文字和文件可以。回车发送，Shift + Enter 换行。"
+          ? "Cloudflare 免费模型 Nemotron 120B。联网走智谱搜索，不能看图；文字和文件可以。回车发送，Shift + Enter 换行。"
           : zhipu
-            ? `智谱官方 ${MIMO_MODELS.find((item) => item.id === model)?.label ?? "GLM"}。能看图、能读文件，不联网。回车发送，Shift + Enter 换行。`
+            ? `智谱官方 ${MIMO_MODELS.find((item) => item.id === model)?.label ?? "GLM"}。能看图、能读文件，联网走智谱搜索。回车发送，Shift + Enter 换行。`
             : "小米 MiMo，默认开联网搜索。可上传或粘贴图片、PDF 和文本文件。回车发送，Shift + Enter 换行。"}
       </p>
 
@@ -439,8 +438,8 @@ export default function MimoPage() {
         <label className="flex items-center gap-1.5 text-sm text-zinc-600">
           <input
             type="checkbox"
-            checked={noSearch ? false : search}
-            disabled={pending || noSearch}
+            checked={search}
+            disabled={pending}
             onChange={(e) => setSearch(e.target.checked)}
           />
           联网搜索

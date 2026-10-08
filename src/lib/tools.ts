@@ -109,7 +109,7 @@ export const tools: Tool[] = [
     name: "MiMo 问答",
     kicker: "对话",
     category: "info",
-    description: "小米 MiMo、智谱 GLM 或 Cloudflare 免费模型。MiMo 可联网，GLM 能看图。",
+    description: "小米 MiMo、智谱 GLM 或 Cloudflare 免费模型。都能联网，GLM 能看图。",
     href: "/tools/mimo",
   },
   {
@@ -183,6 +183,14 @@ export const tools: Tool[] = [
     category: "life",
     description: "把 png / jpg 描成矢量 SVG，图标和扁平图效果最好。",
     href: "/tools/to-svg",
+  },
+  {
+    id: "hotel",
+    name: "酒店盯价",
+    kicker: "出行",
+    category: "life",
+    description: "每小时看天津、云南和自己加的城市。低于 300 元用 Server酱 通知，相同的不发第二遍。",
+    href: "/tools/hotel",
   },
   {
     id: "shelf",
