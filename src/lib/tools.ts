@@ -193,6 +193,14 @@ export const tools: Tool[] = [
     href: "/tools/hotel",
   },
   {
+    id: "flight",
+    name: "机票盯价",
+    kicker: "出行",
+    category: "life",
+    description: "北京或天津到三亚，两位成人，盯重点日期和灵活日期的低价，用 Server酱提醒。",
+    href: "/tools/flight",
+  },
+  {
     id: "shelf",
     name: "临时文件架",
     kicker: "文件",
