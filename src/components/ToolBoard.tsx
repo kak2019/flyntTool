@@ -59,7 +59,7 @@ export function ToolBoard() {
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">个人工具箱</h1>
           <p className="mt-2 max-w-xl text-zinc-500">
-            {editing ? "拖动卡片互换位置，保存后才会记住。点取消则还原。" : "给自己用的小工具，顶部可以直接切换。"}
+            {editing ? "拖动卡片互换位置，保存后才会记住。点取消则还原。" : "享受造轮子的乐趣"}
           </p>
         </div>
         {editing ? (

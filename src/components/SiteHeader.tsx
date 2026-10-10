@@ -47,8 +47,9 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4">
-        <Link href="/" className="shrink-0 font-semibold tracking-tight text-zinc-900">
-          Flynt Tools
+        <Link href="/" className="shrink-0 leading-tight">
+          <span className="block font-semibold tracking-tight text-zinc-900">Flynt Tools</span>
+          <span className="block text-xs text-zinc-400">享受造轮子的乐趣</span>
         </Link>
         <nav ref={navRef} className="flex min-w-0 flex-1 items-center gap-1 text-sm">
           {toolCategories.map((category) => {

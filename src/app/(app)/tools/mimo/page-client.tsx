@@ -167,7 +167,7 @@ function Bubble({ item, waitSec }: { item: ChatItem; waitSec: number }) {
 }
 
 export default function MimoPage() {
-  const [model, setModel] = useState<MimoModelId>("mimo-v2.6-pro-ultraspeed");
+  const [model, setModel] = useState<MimoModelId>("mimo-v2.6-flash");
   const [thinking, setThinking] = useState(false);
   const [search, setSearch] = useState(true);
   const [input, setInput] = useState("");
@@ -410,7 +410,7 @@ export default function MimoPage() {
           ? "Cloudflare 免费模型 Nemotron 120B。联网走智谱搜索，不能看图；文字和文件可以。回车发送，Shift + Enter 换行。"
           : zhipu
             ? `智谱官方 ${MIMO_MODELS.find((item) => item.id === model)?.label ?? "GLM"}。能看图、能读文件，联网走智谱搜索。回车发送，Shift + Enter 换行。`
-            : "小米 MiMo，默认开联网搜索。可上传或粘贴图片、PDF 和文本文件。回车发送，Shift + Enter 换行。"}
+            : "小米 MiMo，默认用更省的 2.6 Flash，并开联网搜索。可上传或粘贴图片、PDF 和文本文件。回车发送，Shift + Enter 换行。"}
       </p>
 
       <div className="mt-5 flex flex-wrap items-center gap-2">

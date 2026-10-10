@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     default: "Flynt Tools",
     template: "%s · Flynt Tools",
   },
-  description: "给自己用的小工具集合",
+  description: "享受造轮子的乐趣",
 };
 
 export const viewport: Viewport = {

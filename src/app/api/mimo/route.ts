@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
 
   const model = isMimoModel(String(body.model ?? ""))
     ? String(body.model)
-    : "mimo-v2.6-pro-ultraspeed";
+    : "mimo-v2.6-flash";
   if (isCloudflareModel(model)) {
     return cloudflareChat(req, messages, model, body.thinking === true, body.search !== false, body.stream !== false);
   }

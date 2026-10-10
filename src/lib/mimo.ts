@@ -1,4 +1,5 @@
 export const MIMO_MODELS = [
+  { id: "mimo-v2.6-flash", label: "MiMo 2.6 Flash", provider: "mimo" },
   { id: "mimo-v2.6-pro-ultraspeed", label: "MiMo UltraSpeed", provider: "mimo" },
   { id: "mimo-v2.6-pro", label: "MiMo Pro", provider: "mimo" },
   { id: "@cf/nvidia/nemotron-3-120b-a12b", label: "Nemotron 120B（免费）", provider: "cloudflare" },

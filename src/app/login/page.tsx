@@ -39,6 +39,7 @@ export default function LoginPage() {
         className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm"
       >
         <p className="text-sm font-medium text-teal-700">Flynt Tools</p>
+        <p className="mt-1 text-sm text-zinc-500">享受造轮子的乐趣</p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">输入密码</h1>
         <p className="mt-2 text-sm text-zinc-500">这是给自己用的工具站，进去需要密码。</p>
 

@@ -109,7 +109,7 @@ export const tools: Tool[] = [
     name: "MiMo 问答",
     kicker: "对话",
     category: "info",
-    description: "小米 MiMo、智谱 GLM 或 Cloudflare 免费模型。都能联网，GLM 能看图。",
+    description: "小米 MiMo 2.6 Flash 更省，也能换 Pro、智谱 GLM 或 Cloudflare 免费模型。都能联网，GLM 能看图。",
     href: "/tools/mimo",
   },
   {
@@ -143,6 +143,14 @@ export const tools: Tool[] = [
     category: "info",
     description: "把附图标号、引线和圆圈合成进图片并改成嵌入型，「图 1」标题不进图。",
     href: "/tools/patent-fig",
+  },
+  {
+    id: "company",
+    name: "查公司",
+    kicker: "企业",
+    category: "info",
+    description: "输入公司名，看工商、股东、主要人员、对外投资、公司发展，以及实控人、受益股东和股权穿透。",
+    href: "/tools/company",
   },
   {
     id: "news",
