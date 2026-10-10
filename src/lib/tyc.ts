@@ -372,7 +372,7 @@ function totalOf(payload: unknown) {
   if (typeof record.total === "number" && record.total > 0) return record.total;
   const sources = asRecord(record.sources);
   if (!sources) return typeof record.total === "number" ? record.total : 0;
-  return Object.values(sources).reduce((sum, source) => {
+  return Object.values(sources).reduce((sum: number, source) => {
     const row = asRecord(source);
     return sum + (typeof row?.total === "number" ? row.total : 0);
   }, 0);
