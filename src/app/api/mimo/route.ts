@@ -63,18 +63,27 @@ function formatUpstreamError(status: number, raw: string) {
   return `MiMo 接口失败（${status}）：${detail}`;
 }
 
+type MimoBody = {
+  messages?: MimoChatMessage[];
+  model?: string;
+  thinking?: boolean;
+  search?: boolean;
+  stream?: boolean;
+};
+
 export async function POST(req: NextRequest) {
+  const body = (await req.json().catch(() => ({}))) as MimoBody;
+  return runMimoChat(req, body);
+}
+
+export async function runMimoChat(
+  req: NextRequest,
+  body: MimoBody,
+  override?: { system?: string; model?: string; search?: boolean },
+) {
   if (rateLimited(clientIp(req))) {
     return NextResponse.json({ error: "请求太频繁，稍等再试" }, { status: 429 });
   }
-
-  const body = (await req.json().catch(() => ({}))) as {
-    messages?: MimoChatMessage[];
-    model?: string;
-    thinking?: boolean;
-    search?: boolean;
-    stream?: boolean;
-  };
 
   const raw = Array.isArray(body.messages) ? body.messages : [];
   const messages = raw
@@ -102,14 +111,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const model = isMimoModel(String(body.model ?? ""))
-    ? String(body.model)
-    : "mimo-v2.6-flash";
+  const model =
+    override?.model ||
+    (isMimoModel(String(body.model ?? "")) ? String(body.model) : "mimo-v2.6-flash");
+  const search = override ? override.search === true : body.search !== false;
+  const system = override?.system || systemPrompt();
   if (isCloudflareModel(model)) {
-    return cloudflareChat(req, messages, model, body.thinking === true, body.search !== false, body.stream !== false);
+    return cloudflareChat(req, messages, model, body.thinking === true, search, body.stream !== false, system);
   }
   if (isZhipuModel(model)) {
-    return zhipuChat(req, messages, model, body.thinking === true, body.search !== false, body.stream !== false);
+    return zhipuChat(req, messages, model, body.thinking === true, search, body.stream !== false, system);
   }
 
   const apiKey = process.env.MIMO_API_KEY;
@@ -117,7 +128,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "未配置 MIMO_API_KEY" }, { status: 500 });
   }
   const thinking = body.thinking === true;
-  const search = body.search !== false;
   const stream = body.stream !== false;
   const baseUrl = (process.env.MIMO_BASE_URL || "https://api.xiaomimimo.com/v1").replace(/\/$/, "");
   const payload = {
@@ -138,7 +148,7 @@ export async function POST(req: NextRequest) {
           },
         ]
       : undefined,
-    messages: [{ role: "system", content: systemPrompt() }, ...toMimoUpstreamMessages(messages)],
+    messages: [{ role: "system", content: system }, ...toMimoUpstreamMessages(messages)],
   };
 
   if (!stream) {
@@ -382,6 +392,7 @@ async function cloudflareChat(
   thinking: boolean,
   search: boolean,
   stream: boolean,
+  system?: string,
 ) {
   if (messages.some((item) => item.attachments?.some((att) => att.kind === "image"))) {
     return NextResponse.json(
@@ -414,7 +425,7 @@ async function cloudflareChat(
     model,
     stream,
     max_tokens: 4096,
-    messages: [{ role: "system", content: cloudflareSystemPrompt(search ? searchNote(hits) : undefined) }, ...upstreamMessages],
+    messages: [{ role: "system", content: system || cloudflareSystemPrompt(search ? searchNote(hits) : undefined) }, ...upstreamMessages],
   };
   const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/v1/chat/completions`;
 
@@ -527,6 +538,7 @@ async function zhipuChat(
   thinking: boolean,
   search: boolean,
   stream: boolean,
+  system?: string,
 ) {
   const apiKey = process.env.ZHIPU_API_KEY;
   if (!apiKey) {
@@ -550,7 +562,7 @@ async function zhipuChat(
     max_tokens: 4096,
     thinking: { type: "enabled", clear_thinking: false },
     messages: [
-      { role: "system", content: cloudflareSystemPrompt(search ? searchNote(hits) : undefined) },
+      { role: "system", content: system || cloudflareSystemPrompt(search ? searchNote(hits) : undefined) },
       ...toMimoUpstreamMessages(messages),
     ],
   };

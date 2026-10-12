@@ -18,10 +18,11 @@ export async function chatMimo(opts: {
   model: MimoModelId;
   thinking?: boolean;
   search?: boolean;
+  endpoint?: string;
   signal?: AbortSignal;
   onDelta?: (state: MimoDelta) => void;
 }): Promise<MimoDelta> {
-  const res = await fetch("/api/mimo", {
+  const res = await fetch(opts.endpoint || "/api/mimo", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     signal: opts.signal,

@@ -1,4 +1,4 @@
-export type ToolCategoryId = "dev" | "info" | "life";
+export type ToolCategoryId = "dev" | "info" | "learn" | "life";
 
 export type Tool = {
   id: string;
@@ -12,6 +12,7 @@ export type Tool = {
 export const toolCategories: { id: ToolCategoryId; name: string }[] = [
   { id: "dev", name: "开发" },
   { id: "info", name: "信息" },
+  { id: "learn", name: "学习" },
   { id: "life", name: "生活" },
 ];
 
@@ -159,6 +160,14 @@ export const tools: Tool[] = [
     category: "info",
     description: "金十快讯优先，外加科技 / 社区 / 前端 RSS。点开去原站。",
     href: "/tools/news",
+  },
+  {
+    id: "math",
+    name: "数学辅导",
+    kicker: "数学",
+    category: "learn",
+    description: "按教材讲知识点、出题、批改和答疑。不超纲，公式按课本来。",
+    href: "/tools/math",
   },
   {
     id: "countdown",
