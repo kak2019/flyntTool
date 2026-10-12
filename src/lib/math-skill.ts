@@ -13,7 +13,7 @@ let cached = "";
 
 export function mathSystemPrompt() {
   if (cached) return cached;
-  const dir = join(process.cwd(), "src/content/math-skill");
+  const dir = join(process.cwd(), "src/learn/math");
   const body = FILES.map((name) => readFileSync(join(dir, name), "utf8")).join("\n\n");
   cached = [
     "你是数学教材同步教育助手。严格遵守下面的技能说明和参考资料。",

@@ -170,6 +170,14 @@ export const tools: Tool[] = [
     href: "/tools/math",
   },
   {
+    id: "planning",
+    name: "备课",
+    kicker: "教案",
+    category: "learn",
+    description: "按国家课程和教材进度写教学设计、学生学习单和课堂观察表。",
+    href: "/tools/planning",
+  },
+  {
     id: "countdown",
     name: "倒计时",
     kicker: "时间",
