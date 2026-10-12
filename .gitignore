@@ -8,5 +8,7 @@ build
 .env*.local
 public/pdf.worker.min.mjs
 *.tsbuildinfo
+__pycache__/
+*.pyc
 /data/*.json
 /data/*.tmp
