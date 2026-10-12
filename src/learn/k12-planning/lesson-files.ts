@@ -255,7 +255,7 @@ function blockToMd(block: Block, shared: Record<string, unknown>, audience: stri
     const items = Array.isArray(block.items) ? block.items : [];
     return items
       .map((item) => {
-        const row = item && typeof item === "object" ? (item as Block) : { text: item };
+        const row = (item && typeof item === "object" ? item : { text: item }) as Block;
         return `**${textOf(row.title)}** ${textOf(row.text)}`.trim();
       })
       .join("\n\n");
