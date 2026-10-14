@@ -178,6 +178,14 @@ export const tools: Tool[] = [
     href: "/tools/planning",
   },
   {
+    id: "class-pet",
+    name: "班级宠物乐园",
+    kicker: "班级",
+    category: "learn",
+    description: "成长能量养成班级宠物。老师加减分，家长每天加分，星币用来照顾和领养。",
+    href: "/tools/class-pet",
+  },
+  {
     id: "countdown",
     name: "倒计时",
     kicker: "时间",
