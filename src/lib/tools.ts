@@ -178,6 +178,14 @@ export const tools: Tool[] = [
     href: "/tools/planning",
   },
   {
+    id: "anatomy",
+    name: "解剖图",
+    kicker: "图解",
+    category: "learn",
+    description: "用 Anatomy 的 kit 画等轴测图，本地构建、WebGL 和审计。默认 MiMo Flash，可换 Pro。",
+    href: "/tools/anatomy",
+  },
+  {
     id: "class-pet",
     name: "班级宠物乐园",
     kicker: "班级",

@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
 export async function runMimoChat(
   req: NextRequest,
   body: MimoBody,
-  override?: { system?: string; model?: string; search?: boolean },
+  override?: { system?: string; model?: string; search?: boolean; maxCompletion?: number },
 ) {
   if (rateLimited(clientIp(req))) {
     return NextResponse.json({ error: "请求太频繁，稍等再试" }, { status: 429 });
@@ -134,7 +134,7 @@ export async function runMimoChat(
     model,
     stream,
     stream_options: stream ? { include_usage: true } : undefined,
-    max_completion_tokens: thinking ? 16384 : 8192,
+    max_completion_tokens: override?.maxCompletion ?? (thinking ? 16384 : 8192),
     thinking: { type: thinking ? "enabled" : "disabled" },
     tool_choice: search ? "auto" : undefined,
     tools: search
