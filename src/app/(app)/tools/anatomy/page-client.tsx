@@ -27,7 +27,7 @@ const STEPS = [
 ];
 
 function budgets(model: MimoModelId) {
-  const write = model === "mimo-v2.6-pro" ? 180 : 90;
+  const write = model === "mimo-v2.6-pro" ? 120 : 70;
   return [write, 25, write, 25];
 }
 
@@ -118,6 +118,7 @@ export default function AnatomyPage() {
       model,
       search: false,
       messages,
+      signal: AbortSignal.timeout(150_000),
       onDelta: (state) => {
         setRaw(state.content);
         if (state.usage) setLiveUsage(state.usage);
@@ -189,7 +190,8 @@ export default function AnatomyPage() {
       else if (built.audit === "failed") setError("页面已经生成，审计还没通过。");
       else if (!built.ok) setError("构建有报错。能打开的预览先留着，日志在下面。");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "生成失败");
+      const timedOut = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
+      setError(timedOut ? "超过 2 分半还没写完，已停止。请再点一次开始画，或把题目说短一点。" : err instanceof Error ? err.message : "生成失败");
     } finally {
       setBusy(false);
       setStep(-1);
@@ -252,9 +254,6 @@ export default function AnatomyPage() {
             ))}
           </select>
         </label>
-        <button type="button" className={primaryBtnClass} disabled={busy || !prompt.trim()} onClick={() => void draw()}>
-          {busy ? "正在生成…" : `用 ${modelLabel} 画`}
-        </button>
         <button type="button" className={btnClass} disabled={!html} onClick={() => download(html, "anatomy.html", "text/html;charset=utf-8")}>
           下载 HTML
         </button>
@@ -263,6 +262,14 @@ export default function AnatomyPage() {
         </button>
         {audit ? <span className="text-sm text-zinc-500">审计：{audit === "passed" ? "通过" : audit === "failed" ? "未通过" : "未跑完"}</span> : null}
       </div>
+      <button
+        type="button"
+        className="w-full rounded-2xl bg-teal-700 px-4 py-3 text-base font-semibold text-white hover:bg-teal-800 disabled:opacity-50"
+        disabled={busy || !prompt.trim()}
+        onClick={() => void draw()}
+      >
+        {busy ? "正在生成…" : `开始画 · ${modelLabel}`}
+      </button>
       {busy ? (
         <section className="rounded-2xl border border-teal-100 bg-teal-50/70 p-4">
           <div className="flex flex-wrap items-end justify-between gap-2">
@@ -297,7 +304,7 @@ export default function AnatomyPage() {
         <div className="flex h-72 items-center justify-center rounded-2xl border border-dashed border-zinc-200 px-6 text-center text-sm leading-6 text-zinc-400">
           {busy
             ? "图要等构建结束才出现。上面的步骤和倒计时就是进度。"
-            : "点开始后，Flash 通常 1 到 3 分钟出图。审计不过会自动再画一轮，时间大约再加 1 到 2 分钟。Pro 更慢一些。"}
+            : "点上面的「开始画」。Flash 大约 1 分钟出图；超过 2 分半会自动停下。审计不过会再写一版。Pro 更慢一些。"}
         </div>
       )}
       {log ? (

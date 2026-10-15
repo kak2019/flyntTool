@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
       system: anatomySystemPrompt(),
       model,
       search: false,
-      maxCompletion: 16384,
+      maxCompletion: 8192,
     },
   );
 }
