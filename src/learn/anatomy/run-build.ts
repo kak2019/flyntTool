@@ -92,11 +92,9 @@ function runNode(cwd: string) {
     });
     let log = "";
     let settled = false;
-    let timer: NodeJS.Timeout;
     const finish = (value: string) => {
       if (settled) return;
       settled = true;
-      clearTimeout(timer);
       resolve(value);
     };
     const take = (chunk: Buffer) => {
@@ -105,7 +103,7 @@ function runNode(cwd: string) {
     };
     child.stdout.on("data", take);
     child.stderr.on("data", take);
-    timer = setTimeout(() => {
+    const timer = setTimeout(() => {
       // SIGTERM 能被脚本吞掉，Linux 上会一直不收尾，所以直接强杀。
       child.kill("SIGKILL");
       log += "\n构建超时。";
@@ -113,10 +111,12 @@ function runNode(cwd: string) {
       setTimeout(() => finish(log), 2_000);
     }, 25_000);
     child.on("close", (code) => {
+      clearTimeout(timer);
       if (code && code !== 0 && !/audit failed/.test(log)) log += `\n进程退出码 ${code}`;
       finish(log);
     });
     child.on("error", (err) => {
+      clearTimeout(timer);
       finish(`${log}\n${err.message}`);
     });
   });
