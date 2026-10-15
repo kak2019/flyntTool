@@ -9,7 +9,12 @@ import * as k from "./kit/iso-kit.mjs";
 import * as A from "./kit/audit.mjs";
 import { kitScript } from "./inline-kit.mjs";
 
-用 k.fitProjection、k.slabOf、k.cylinder、k.solidSvg、k.lineSvg、k.dotsSvg、k.plateHtml、k.pageHtml。主题读 process.argv.includes("--light")。标题和读数用简体中文。live 里用指针移动一个零件。
+用 k.fitProjection、k.boxCorners、k.slabOf、k.cylinder、k.solidSvg、k.lineSvg、k.dotsSvg、k.plateHtml、k.pageHtml。主题读 process.argv.includes("--light")。标题和读数用简体中文。live 里用指针移动一个零件。
+
+fitProjection 的第一个参数必须是 [x,y,z] 世界坐标数组，不能传 plan 对象、零件列表或二维点。正确写法：
+const BASE = { x: -40, y: -24, w: 80, d: 48, r: 4 };
+const P = k.fitProjection([...k.boxCorners(BASE, -6, 28), [0, 0, 36]], 640, 400, { pad: 28 });
+每个点都是三个数字：[x, y, z]。z 朝上。
 
 整个文件必须少于 180 行，并且最后必须有这三步，名字不能改：
 const body = k.plateHtml({ fig: "Fig 1", title, hint, readout, body: svg });

@@ -8,7 +8,35 @@ export function cameraOf({ scale, azimuth = AZIMUTH, elevation = ELEVATION }) {
     const e = elevation * RADIANS;
     return { sinA: Math.sin(a), cosA: Math.cos(a), sinE: Math.sin(e), cosE: Math.cos(e), k: scale * UNIT };
 }
-export function iso([x, y, z], projection) {
+function previewPoint(value) {
+    try {
+        const text = JSON.stringify(value);
+        return text && text.length < 160 ? text : Object.prototype.toString.call(value);
+    }
+    catch {
+        return Object.prototype.toString.call(value);
+    }
+}
+/** Normalize a world point to [x, y, z]. Accepts arrays or {x,y,z}. */
+export function point3(point, label = "[x,y,z]") {
+    if (Array.isArray(point) && point.length >= 3) {
+        const x = Number(point[0]);
+        const y = Number(point[1]);
+        const z = Number(point[2]);
+        if ([x, y, z].every(Number.isFinite))
+            return [x, y, z];
+    }
+    else if (point && typeof point === "object") {
+        const x = Number(point.x);
+        const y = Number(point.y);
+        const z = Number(point.z);
+        if ([x, y, z].every(Number.isFinite))
+            return [x, y, z];
+    }
+    throw new TypeError(`${label} 必须是 [x, y, z] 世界坐标，收到 ${previewPoint(point)}`);
+}
+export function iso(point, projection) {
+    const [x, y, z] = point3(point, "iso(point)");
     const { origin } = projection;
     const { sinA, cosA, sinE, cosE, k } = cameraOf(projection);
     return [origin[0] + (x * sinA - y * cosA) * k, origin[1] + ((x * cosA + y * sinA) * sinE - z * cosE) * k];
@@ -17,7 +45,8 @@ export function towardViewer(projection) {
     const { sinA, cosA } = cameraOf(projection);
     return [cosA, sinA];
 }
-export function depthOf([x, y, z], projection) {
+export function depthOf(point, projection) {
+    const [x, y, z] = point3(point, "depthOf(point)");
     const { sinA, cosA, sinE, cosE } = cameraOf(projection);
     return (x * cosA + y * sinA) * cosE + z * sinE;
 }
@@ -391,8 +420,11 @@ export function screenRise(height, projection) {
     return height * cosE * k;
 }
 export function fitProjection(points, width, height, { pad = 24, headroom = 0, azimuth = AZIMUTH, elevation = ELEVATION } = {}) {
+    if (!Array.isArray(points) || !points.length) {
+        throw new TypeError("fitProjection(points) 需要非空的 [x,y,z] 列表，例如 [...k.boxCorners(plan, z0, z1)]");
+    }
     const unit = { origin: [0, 0], scale: 1, azimuth, elevation };
-    const flat = points.map((point) => iso(point, unit));
+    const flat = points.map((point, index) => iso(point3(point, `fitProjection points[${index}]`), unit));
     const xs = flat.map(([x]) => x);
     const ys = flat.map(([, y]) => y);
     const left = Math.min(...xs);

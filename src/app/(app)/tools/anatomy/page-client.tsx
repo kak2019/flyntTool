@@ -172,7 +172,7 @@ export default function AnatomyPage() {
           { role: "assistant", content: first.content },
           {
             role: "user",
-            content: `构建或审计没有通过。请只输出修正后的完整 build.mjs。\n\n${built.log.slice(-4000)}`,
+            content: `构建或审计没有通过。请只输出修正后的完整 build.mjs。\n若报错与 iso / fitProjection / not iterable 有关：fitProjection 的 points 必须是 [x,y,z] 数组，请改成 [...k.boxCorners(plan, z0, z1), ...]，不要传对象或零件列表。\n\n${built.log.slice(-4000)}`,
           },
         ]);
         const next = extractBuildScript(second.content);
