@@ -87,6 +87,7 @@ function runNode(cwd: string) {
         PATH: process.env.PATH ?? "",
         PATHEXT: process.env.PATHEXT ?? "",
         SystemRoot: process.env.SystemRoot ?? "",
+        NODE_ENV: process.env.NODE_ENV ?? "production",
       },
     });
     let log = "";

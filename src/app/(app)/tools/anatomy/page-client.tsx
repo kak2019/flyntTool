@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { extractBuildScript } from "@/learn/anatomy/script";
 import { chatMimo } from "@/lib/client-mimo";
 import { addMimoUsage, emptyMimoUsage, type MimoChatMessage, type MimoModelId, type MimoUsage } from "@/lib/mimo";
-import { btnClass, fieldClass, primaryBtnClass, selectClass } from "@/lib/styles";
+import { btnClass, fieldClass, selectClass } from "@/lib/styles";
 
 const MODELS: { id: MimoModelId; label: string }[] = [
   { id: "mimo-v2.6-flash", label: "MiMo 2.6 Flash" },
