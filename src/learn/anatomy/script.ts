@@ -1,4 +1,4 @@
-const MAX_SCRIPT = 80_000;
+export const MAX_SCRIPT = 80_000;
 
 export function extractBuildScript(text: string) {
   const fence = text.match(/```(?:javascript|js|mjs)?\s*([\s\S]*?)```/i);

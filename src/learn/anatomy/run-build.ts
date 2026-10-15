@@ -91,24 +91,33 @@ function runNode(cwd: string) {
       },
     });
     let log = "";
+    let settled = false;
+    let timer: NodeJS.Timeout;
+    const finish = (value: string) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(value);
+    };
     const take = (chunk: Buffer) => {
       log += chunk.toString("utf8");
       if (log.length > MAX_LOG * 2) log = log.slice(-MAX_LOG * 2);
     };
     child.stdout.on("data", take);
     child.stderr.on("data", take);
-    const timer = setTimeout(() => {
-      child.kill();
+    timer = setTimeout(() => {
+      // SIGTERM 能被脚本吞掉，Linux 上会一直不收尾，所以直接强杀。
+      child.kill("SIGKILL");
       log += "\n构建超时。";
+      // 强杀后 close 仍可能不来，兜底让请求结束。
+      setTimeout(() => finish(log), 2_000);
     }, 25_000);
     child.on("close", (code) => {
-      clearTimeout(timer);
       if (code && code !== 0 && !/audit failed/.test(log)) log += `\n进程退出码 ${code}`;
-      resolve(log);
+      finish(log);
     });
     child.on("error", (err) => {
-      clearTimeout(timer);
-      resolve(`${log}\n${err.message}`);
+      finish(`${log}\n${err.message}`);
     });
   });
 }
