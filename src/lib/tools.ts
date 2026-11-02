@@ -114,6 +114,14 @@ export const tools: Tool[] = [
     href: "/tools/mimo",
   },
   {
+    id: "log-parse",
+    name: "日志解析",
+    kicker: "日志",
+    category: "info",
+    description: "上传专利文书导出日志，汇总新复制、已生成和类型不支持的 PDF。",
+    href: "/tools/log-parse",
+  },
+  {
     id: "md",
     name: "Markdown 预览",
     kicker: "文本",
